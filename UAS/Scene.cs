@@ -22,6 +22,8 @@ namespace UAS
         public static Object scene;
         public static Object lightSphere;
 
+        public static List<ImageStore> TextureLibrary = new List<ImageStore>();
+
         public static Matrix4 ProjectionMatrix;
         public static Matrix4 ViewMatrix;
         public static Vector3 ViewPosition = new Vector3(20, 3, 0);
@@ -102,7 +104,7 @@ namespace UAS
 
             lightSphere = new Object("lightsphere");
             lightSphere.createCube();
-            lightSphere.material.loadTexture("test.jpg");
+            lightSphere.material.loadDiffuse("test.jpg");
             lightSphere.scale(1);
             lightSphere.setTranslate(LightPosition.X, -LightPosition.Z, LightPosition.Y);
             lightSphere.setColor(255, 245, 166);

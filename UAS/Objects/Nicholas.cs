@@ -24,16 +24,20 @@ namespace UAS
 
             //scene.addChild(new Object("Cube"));
             //scene.lastChild().createCube();
-            //scene.lastChild().material.loadTexture("./container/cont_DIFF.png", "./container/cont_SPEC.png", "", "", "");
+            ////scene.lastChild().material.loadTexture("./container/cont_DIFF.png", "./container/cont_SPEC.png", "", "", "");
             //scene.lastChild().scale(5f);
-            //scene.lastChild().material.loadTexture("./cobble/cbl_DIFF.jpg", "./cobble/cbl_SPEC.jpg", "./cobble/cbl_NORM.jpg", "./cobble/cbl_DISP.jpg", "./cobble/cbl_AO.jpg");
-            //scene.lastChild().material.loadTexture("./brick/brick.jpg", "", "./brick/brick_NORM.jpg", "./brick/brick_DISP.jpg", "");
-            //scene.lastChild().refreshTexture();
+            //scene.lastChild().material.loadDiffuse("./cobble/cbl_DIFF.jpg");
+            //scene.lastChild().material.loadSpecular("./cobble/cbl_SPEC.jpg");
+            //scene.lastChild().material.loadNormal("./cobble/cbl_NORM.jpg");
+            //scene.lastChild().material.loadParalax("./cobble/cbl_DISP.jpg");
+            //scene.lastChild().material.loadAmbiOcc("./cobble/cbl_AO.jpg");
+            ////scene.lastChild().material.loadTexture("./cobble/cbl_DIFF.jpg", "./cobble/cbl_SPEC.jpg", "./cobble/cbl_NORM.jpg", "./cobble/cbl_DISP.jpg", "./cobble/cbl_AO.jpg");
+            ////scene.lastChild().material.loadTexture("./brick/brick.jpg", "", "./brick/brick_NORM.jpg", "./brick/brick_DISP.jpg", "");
             //scene.lastChild().translate(0, 0, 0f);
             //scene.lastChild().centerOrigin();
-            //scene.lastChild().setColor(1,1,1);
+            //scene.lastChild().setColor(1, 1, 1);
 
-            //scene.LoadModel(ref scene, "./TestOBJ/room/room.glb", "Handgun");
+            //scene.LoadModel(ref scene, "./TestOBJ/room/room.glb", "Room");
             scene.LoadModel(ref scene, "./TestOBJ/backpack/backpack.obj", "Backpack");
 
 

@@ -22,30 +22,31 @@ namespace UAS
         public float alpha;
         public float dispHeight;
 
+        public int diffHandle;
+        public int specHandle;
+        public int normHandle;
+        public int paraHandle;
+        public int ambiHandle;
+
+        private List<byte> white_default;
+        private List<byte> black_default;
+
         public string name;
-
-        public byte[] diffData;
-        public int diffWidth;
-        public int diffHeight;
-
-        public byte[] specData;
-        public int specWidth;
-        public int specHeight;
-
-        public byte[] normData;
-        public int normWidth;
-        public int normHeight;
-
-        public byte[] paraData;
-        public int paraWidth;
-        public int paraHeight;
-
-        public byte[] ambiData;
-        public int ambiWidth;
-        public int ambiHeight;
 
         public Material(string matname = "Default")
         {
+
+            // diffuse map
+            diffHandle = GL.GenTexture();
+            // spec map
+            specHandle = GL.GenTexture();
+            // norm map
+            normHandle = GL.GenTexture();
+            // para map
+            paraHandle = GL.GenTexture();
+            // ambi map
+            ambiHandle = GL.GenTexture();
+
             name = matname;
             ambient.X = 1;
             ambient.Y = 1;
@@ -60,225 +61,161 @@ namespace UAS
             dispHeight = 0.1f;
             specularExponent = 8;
 
-            List<byte> diff_pixels = new List<byte>(4 * 1 * 1);
-            List<byte> spec_pixels = new List<byte>(4 * 1 * 1);
-            List<byte> norm_pixels = new List<byte>(4 * 1 * 1);
-            List<byte> para_pixels = new List<byte>(4 * 1 * 1);
-            List<byte> ambi_pixels = new List<byte>(4 * 1 * 1);
+            white_default = new List<byte>(4 * 1 * 1);
+            white_default.Add(255);
+            white_default.Add(255);
+            white_default.Add(255);
+            white_default.Add(255);
 
-            diff_pixels.Add(255);
-            diff_pixels.Add(255);
-            diff_pixels.Add(255);
-            diff_pixels.Add(255);
+            black_default = new List<byte>(4 * 1 * 1);
+            black_default.Add(0);
+            black_default.Add(0);
+            black_default.Add(0);
+            black_default.Add(0);
 
-            diffWidth = 1;
-            diffHeight = 1;
+            GL.BindTexture(TextureTarget.Texture2D, diffHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1 , 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            spec_pixels.Add(255);
-            spec_pixels.Add(255);
-            spec_pixels.Add(255);
-            spec_pixels.Add(255);
+            GL.BindTexture(TextureTarget.Texture2D, specHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            specWidth = 1;
-            specHeight = 1;
+            GL.BindTexture(TextureTarget.Texture2D, ambiHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            norm_pixels.Add(255);
-            norm_pixels.Add(255);
-            norm_pixels.Add(255);
-            norm_pixels.Add(255);
+            GL.BindTexture(TextureTarget.Texture2D, normHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            normWidth = 1;
-            normHeight = 1;
-
-            para_pixels.Add(0);
-            para_pixels.Add(0);
-            para_pixels.Add(0);
-            para_pixels.Add(0);
-
-            paraWidth = 1;
-            paraHeight = 1;
-
-            ambi_pixels.Add(255);
-            ambi_pixels.Add(255);
-            ambi_pixels.Add(255);
-            ambi_pixels.Add(255);
-
-            ambiWidth = 1;
-            ambiHeight = 1;
-
-            diffData = diff_pixels.ToArray();
-            specData = spec_pixels.ToArray();
-            normData = norm_pixels.ToArray();
-            paraData = norm_pixels.ToArray();
-            ambiData = norm_pixels.ToArray();
+            GL.BindTexture(TextureTarget.Texture2D, paraHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         }
 
-        public void loadTexture(String diff = "", String spec = "", String norm = "", String para = "" , String ambi = "")
+        public void loadDiffuse(String diffusePath = "")
         {
-            List<byte> diff_pixels;
-            if (diff == "")
-            {
-                diff_pixels = new List<byte>(4 * 1 * 1);
-                diff_pixels.Add(255);
-                diff_pixels.Add(255);
-                diff_pixels.Add(255);
-                diff_pixels.Add(255);
-                diffWidth = 1;
-                diffHeight = 1;
+            if (diffusePath == "") {
+                diffHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, diffHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             }
             else
             {
-                Image<Rgba32> image = Image.Load<Rgba32>(diff);
-                image.Mutate(x => x.Flip(FlipMode.Vertical));
-                diff_pixels = new List<byte>(4 * image.Width * image.Height);
-                for (int y = 0; y < image.Height; y++)
-                {
-                    var row = image.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        diff_pixels.Add(row[x].R);
-                        diff_pixels.Add(row[x].G);
-                        diff_pixels.Add(row[x].B);
-                        diff_pixels.Add(row[x].A);
-                    }
-                }
-                diffWidth = image.Width;
-                diffHeight = image.Height;
+                diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, diffusePath);
             }
-            diffData = diff_pixels.ToArray();
+        }
 
-            List<byte> spec_pixels;
-            if (spec == "")
+        public void loadSpecular(String specularPath = "")
+        {
+            if (specularPath == "")
             {
-                spec_pixels = new List<byte>(4 * 1 * 1);
-                spec_pixels.Add(255);
-                spec_pixels.Add(255);
-                spec_pixels.Add(255);
-                spec_pixels.Add(255);
-                specWidth = 1;
-                specHeight = 1;
+                specHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, specHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             }
             else
             {
-                Image<Rgba32> image = Image.Load<Rgba32>(spec);
-                image.Mutate(x => x.Flip(FlipMode.Vertical));
-                spec_pixels = new List<byte>(4 * image.Width * image.Height);
-                for (int y = 0; y < image.Height; y++)
-                {
-                    var row = image.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        spec_pixels.Add(row[x].R);
-                        spec_pixels.Add(row[x].G);
-                        spec_pixels.Add(row[x].B);
-                        spec_pixels.Add(row[x].A);
-                    }
-                }
-                specWidth = image.Width;
-                specHeight = image.Height;
+                specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, specularPath);
             }
-            specData = spec_pixels.ToArray();
+        }
 
-            List<byte> norm_pixels;
-            if (norm == "")
+        public void loadAmbiOcc(String ambioccPath = "")
+        {
+            if (ambioccPath == "")
             {
-                norm_pixels = new List<byte>(4 * 1 * 1);
-                norm_pixels.Add(255);
-                norm_pixels.Add(255);
-                norm_pixels.Add(255);
-                norm_pixels.Add(255);
-                normWidth = 1;
-                normHeight = 1;
+                ambiHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, ambiHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             }
             else
             {
-                Image<Rgba32> image = Image.Load<Rgba32>(norm);
-                image.Mutate(x => x.Flip(FlipMode.Vertical));
-                norm_pixels = new List<byte>(4 * image.Width * image.Height);
-                for (int y = 0; y < image.Height; y++)
-                {
-                    var row = image.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        norm_pixels.Add(row[x].R);
-                        norm_pixels.Add(row[x].G);
-                        norm_pixels.Add(row[x].B);
-                        norm_pixels.Add(row[x].A);
-                    }
-                }
-                normWidth = image.Width;
-                normHeight = image.Height;
+                ambiHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, ambioccPath);
             }
-            normData = norm_pixels.ToArray();
+        }
 
-            List<byte> para_pixels;
-            if (para == "")
+        public void loadNormal(String normalPath = "")
+        {
+            if (normalPath == "")
             {
-                para_pixels = new List<byte>(4 * 1 * 1);
-                para_pixels.Add(0);
-                para_pixels.Add(0);
-                para_pixels.Add(0);
-                para_pixels.Add(0);
-                paraWidth = 1;
-                paraHeight = 1;
+                normHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, normHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             }
             else
             {
-                Image<Rgba32> image = Image.Load<Rgba32>(para);
-                image.Mutate(x => x.Flip(FlipMode.Vertical));
-                para_pixels = new List<byte>(4 * image.Width * image.Height);
-                for (int y = 0; y < image.Height; y++)
-                {
-                    var row = image.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        para_pixels.Add(row[x].R);
-                        para_pixels.Add(row[x].G);
-                        para_pixels.Add(row[x].B);
-                        para_pixels.Add(row[x].A);
-                    }
-                }
-                paraWidth = image.Width;
-                paraHeight = image.Height;
+                normHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, normalPath);
             }
-            paraData = para_pixels.ToArray();
+        }
 
-            List<byte> ambi_pixels;
-            if (ambi == "")
+        public void loadParalax(String paralaxPath = "")
+        {
+            if (paralaxPath == "")
             {
-                ambi_pixels = new List<byte>(4 * 1 * 1);
-                ambi_pixels.Add(255);
-                ambi_pixels.Add(255);
-                ambi_pixels.Add(255);
-                ambi_pixels.Add(255);
-                ambiWidth = 1;
-                ambiHeight = 1;
+                paraHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, paraHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             }
             else
             {
-                Image<Rgba32> image = Image.Load<Rgba32>(ambi);
-                image.Mutate(x => x.Flip(FlipMode.Vertical));
-                ambi_pixels = new List<byte>(4 * image.Width * image.Height);
-                for (int y = 0; y < image.Height; y++)
-                {
-                    var row = image.GetPixelRowSpan(y);
-
-                    for (int x = 0; x < image.Width; x++)
-                    {
-                        ambi_pixels.Add(row[x].R);
-                        ambi_pixels.Add(row[x].G);
-                        ambi_pixels.Add(row[x].B);
-                        ambi_pixels.Add(row[x].A);
-                    }
-                }
-                ambiWidth = image.Width;
-                ambiHeight = image.Height;
+                paraHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, paralaxPath);
             }
-            ambiData = ambi_pixels.ToArray();
         }
     }
 

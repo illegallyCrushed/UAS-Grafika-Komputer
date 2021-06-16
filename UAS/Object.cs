@@ -32,11 +32,11 @@ namespace UAS
         private int _bitangentsBufferObject;
         private int _texcoordsBufferObject;
 
-        private int _diffMapBufferObject;
-        private int _specMapBufferObject;
-        private int _normMapBufferObject;
-        private int _paraMapBufferObject;
-        private int _ambiMapBufferObject;
+        public bool lock_diff = false;
+        public bool lock_spec = false;
+        public bool lock_norm = false;
+        public bool lock_para = false;
+        public bool lock_ambi = false;
 
         // Vectors
         private List<Vector3> vertices = new List<Vector3>();
@@ -144,81 +144,10 @@ namespace UAS
                 vertexIndices.Count * sizeof(uint),
                 vertexIndices.ToArray(), BufferUsageHint.StaticDraw);
 
-            // diffuse map
-            GL.ActiveTexture(TextureUnit.Texture1);
-            _diffMapBufferObject = GL.GenTexture();
-            // spec map
-            GL.ActiveTexture(TextureUnit.Texture2);
-            _specMapBufferObject = GL.GenTexture();
-            // norm map
-            GL.ActiveTexture(TextureUnit.Texture3);
-            _normMapBufferObject = GL.GenTexture();
-            // para map
-            GL.ActiveTexture(TextureUnit.Texture4);
-            _paraMapBufferObject = GL.GenTexture();
-            // ambi map
-            GL.ActiveTexture(TextureUnit.Texture5);
-            _ambiMapBufferObject = GL.GenTexture();
-
-            refreshTexture();
-
             foreach (var child in children)
             {
                 child.init();
             }
-        }
-
-        public void refreshTexture()
-        {
-            GL.ActiveTexture(TextureUnit.Texture1);
-            GL.BindTexture(TextureTarget.Texture2D, _diffMapBufferObject);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, material.diffWidth, material.diffHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, material.diffData);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.ActiveTexture(TextureUnit.Texture2);
-            GL.BindTexture(TextureTarget.Texture2D, _specMapBufferObject);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, material.specWidth, material.specHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, material.specData);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.ActiveTexture(TextureUnit.Texture3);
-            GL.BindTexture(TextureTarget.Texture2D, _normMapBufferObject);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, material.normWidth, material.normHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, material.normData);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.ActiveTexture(TextureUnit.Texture4);
-            GL.BindTexture(TextureTarget.Texture2D, _paraMapBufferObject);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, material.paraWidth, material.paraHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, material.paraData);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.ActiveTexture(TextureUnit.Texture5);
-            GL.BindTexture(TextureTarget.Texture2D, _ambiMapBufferObject);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, material.ambiWidth, material.ambiHeight, 0, PixelFormat.Rgba, PixelType.UnsignedByte, material.ambiData);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         }
 
         public bool isParent()
@@ -252,17 +181,20 @@ namespace UAS
             Assimp.Scene newobj;
             AssimpContext importer = new AssimpContext();
             newobj = importer.ImportFile(path, PostProcessSteps.Triangulate);
+            List<ImageStore> ImgLib = new List<ImageStore>();
+            String parDir = Path.GetDirectoryName(path);
+            parDir += "\\";
 
             Object model = new Object(groupname);
 
             List<byte[]> texLib = new List<byte[]>();
 
             // process mesh nodes
-            processNodes(newobj.RootNode, newobj, model);
+            processNodes(newobj.RootNode, newobj, model, parDir,ref ImgLib);
             parent.addChild(model);
         }
 
-        private void processNodes(Assimp.Node node, Assimp.Scene scene, Object model)
+        private void processNodes(Assimp.Node node, Assimp.Scene scene, Object model, String parDir,ref List<ImageStore> ImgLib)
         {
             Console.Write("\n##NODE - ");
             Console.Write(node.Name);
@@ -342,26 +274,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> ambi_pixels;
-                            ambi_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    ambi_pixels.Add(row[x].R);
-                                    ambi_pixels.Add(row[x].G);
-                                    ambi_pixels.Add(row[x].B);
-                                    ambi_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.ambiWidth = image.Width;
-                            newmat.ambiHeight = image.Height;
-                            newmat.ambiData = ambi_pixels.ToArray();
+                            newmat.ambiHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.ambiHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureAmbientOcclusion.FilePath);
                     }
                 }
 
@@ -372,26 +290,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> diff_pixels;
-                            diff_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    diff_pixels.Add(row[x].R);
-                                    diff_pixels.Add(row[x].G);
-                                    diff_pixels.Add(row[x].B);
-                                    diff_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.diffWidth = image.Width;
-                            newmat.diffHeight = image.Height;
-                            newmat.diffData = diff_pixels.ToArray();
+                            newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureDiffuse.FilePath);
                     }
                 }
 
@@ -402,26 +306,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> diff_pixels;
-                            diff_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    diff_pixels.Add(row[x].R);
-                                    diff_pixels.Add(row[x].G);
-                                    diff_pixels.Add(row[x].B);
-                                    diff_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.diffWidth = image.Width;
-                            newmat.diffHeight = image.Height;
-                            newmat.diffData = diff_pixels.ToArray();
+                            newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureEmissive.FilePath);
                     }
                 }
 
@@ -432,26 +322,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> para_pixels;
-                            para_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    para_pixels.Add(row[x].R);
-                                    para_pixels.Add(row[x].G);
-                                    para_pixels.Add(row[x].B);
-                                    para_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.paraWidth = image.Width;
-                            newmat.paraHeight = image.Height;
-                            newmat.paraData = para_pixels.ToArray();
+                            newmat.paraHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.paraHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureDisplacement.FilePath);
                     }
                 }
 
@@ -462,26 +338,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> norm_pixels;
-                            norm_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    norm_pixels.Add(row[x].R);
-                                    norm_pixels.Add(row[x].G);
-                                    norm_pixels.Add(row[x].B);
-                                    norm_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.normWidth = image.Width;
-                            newmat.normHeight = image.Height;
-                            newmat.normData = norm_pixels.ToArray();
+                            newmat.normHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.normHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureNormal.FilePath);
                     }
                 }
 
@@ -492,26 +354,12 @@ namespace UAS
                     {
                         if (embtext.IsCompressed)
                         {
-                            Image<Rgba32> image = Image.Load<Rgba32>(embtext.CompressedData);
-                            image.Mutate(x => x.Flip(FlipMode.Vertical));
-                            List<byte> spec_pixels;
-                            spec_pixels = new List<byte>(4 * image.Width * image.Height);
-                            for (int y = 0; y < image.Height; y++)
-                            {
-                                var row = image.GetPixelRowSpan(y);
-
-                                for (int x = 0; x < image.Width; x++)
-                                {
-                                    spec_pixels.Add(row[x].R);
-                                    spec_pixels.Add(row[x].G);
-                                    spec_pixels.Add(row[x].B);
-                                    spec_pixels.Add(row[x].A);
-                                }
-                            }
-                            newmat.specWidth = image.Width;
-                            newmat.specHeight = image.Height;
-                            newmat.specData = spec_pixels.ToArray();
+                            newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
+                    }
+                    else
+                    {
+                        newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureSpecular.FilePath);
                     }
                 }
 
@@ -541,7 +389,7 @@ namespace UAS
             foreach (var child in node.Children)
             {
                 model.addChild(new Object(child.Name));
-                processNodes(child, scene, model.lastChild());
+                processNodes(child, scene, model.lastChild(), parDir,ref ImgLib);
             }
             Matrix4x4 ps = node.Transform;
             Matrix4 partrans = new Matrix4(new Vector4(ps.A1, ps.A2, ps.A3, ps.A4), new Vector4(ps.B1, ps.B2, ps.B3, ps.B4), new Vector4(ps.C1, ps.C2, ps.C3, ps.C4), new Vector4(ps.D1, ps.D2, ps.D3, ps.D4));
@@ -825,15 +673,15 @@ namespace UAS
             if (vertices.Count > 0)
             {
                 GL.ActiveTexture(TextureUnit.Texture1);
-                GL.BindTexture(TextureTarget.Texture2D, _diffMapBufferObject);
+                GL.BindTexture(TextureTarget.Texture2D, material.diffHandle);
                 GL.ActiveTexture(TextureUnit.Texture2);
-                GL.BindTexture(TextureTarget.Texture2D, _specMapBufferObject);
+                GL.BindTexture(TextureTarget.Texture2D, material.specHandle);
                 GL.ActiveTexture(TextureUnit.Texture3);
-                GL.BindTexture(TextureTarget.Texture2D, _normMapBufferObject);
+                GL.BindTexture(TextureTarget.Texture2D, material.normHandle);
                 GL.ActiveTexture(TextureUnit.Texture4);
-                GL.BindTexture(TextureTarget.Texture2D, _paraMapBufferObject);
+                GL.BindTexture(TextureTarget.Texture2D, material.paraHandle);
                 GL.ActiveTexture(TextureUnit.Texture5);
-                GL.BindTexture(TextureTarget.Texture2D, _ambiMapBufferObject);
+                GL.BindTexture(TextureTarget.Texture2D, material.ambiHandle);
 
                 Scene.Shader_Wireframe.SetMatrix4("mvp_transform", processed_transform * Scene.ViewMatrix * Scene.ProjectionMatrix);
                 Scene.Shader_Wireframe.SetVector3("lineColor", Scene.WireframeColor);
