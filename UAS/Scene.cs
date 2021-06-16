@@ -33,7 +33,7 @@ namespace UAS
         public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
         //public static Vector3 SkyColor = new Vector3(0, 0, 0);
         public static Vector2i WindowSize;
-        public static float LightFarPlane = 100.0f;
+        public static float LightFarPlane = 1000.0f;
         public static float FOV = 45.0f;
         public static float RotateVelocityX = 0;
         public static float RotateVelocityY = 0;
@@ -49,7 +49,7 @@ namespace UAS
         public static List<Matrix4> LightSpaceMatrix = new List<Matrix4>();
         public static Matrix4 LightProjectionMatrix;
         public static Vector3 LightPosition = new Vector3(10,10,0);
-        public static Vector3 LightColor = new Vector3(0.75f,0.75f,0.75f);
+        public static Vector3 LightColor = new Vector3(1f,1f,1f);
         public static void SetScene(Vector2i Size)
         {
             if (Window.ENABLE_SHADOW)

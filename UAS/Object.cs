@@ -267,6 +267,22 @@ namespace UAS
                     newmat.dispHeight = premat.BumpScaling;
                 }
 
+                if (premat.HasTextureAmbient)
+                {
+                    EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureAmbient.FilePath);
+                    if (embtext != null)
+                    {
+                        if (embtext.IsCompressed)
+                        {
+                            newmat.ambiHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
+                        }
+                    }
+                    else
+                    {
+                        newmat.ambiHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureAmbient.FilePath);
+                    }
+                }
+
                 if (premat.HasTextureAmbientOcclusion)
                 {
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureAmbientOcclusion.FilePath);

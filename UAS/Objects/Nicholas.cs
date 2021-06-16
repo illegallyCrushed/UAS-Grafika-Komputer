@@ -38,7 +38,10 @@ namespace UAS
             //scene.lastChild().setColor(1, 1, 1);
 
             //scene.LoadModel(ref scene, "./TestOBJ/room/room.glb", "Room");
+            //scene.LoadModel(ref scene, "./TestOBJ/wolf/Wolf-Blender-2.82a.glb", "wolf");
             scene.LoadModel(ref scene, "./TestOBJ/backpack/backpack.obj", "Backpack");
+            //scene.LoadModel(ref scene, "./irgl/ComingSoon.glb", "irgl");
+
 
 
             //scene.lastChild().material.loadTexture("./cobble/cbl_DIFF.jpg", "./cobble/cbl_SPEC.jpg", "./cobble/cbl_NORM.jpg", "./cobble/cbl_DISP.jpg", "./cobble/cbl_AO.jpg");

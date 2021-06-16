@@ -23,7 +23,7 @@ namespace UAS
             int Height;
 
             Image<Rgba32> image = Image.Load<Rgba32>(path);
-            //image.Mutate(x => x.Flip(FlipMode.Vertical));
+            image.Mutate(x => x.Flip(FlipMode.Vertical));
             image_pixels = new List<byte>(4 * image.Width * image.Height);
             for (int y = 0; y < image.Height; y++)
             {
