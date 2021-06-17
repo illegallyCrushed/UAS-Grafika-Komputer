@@ -8,6 +8,7 @@ using LearnOpenTK.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
 using System.Linq;
+using System.Windows;
 
 namespace UAS
 {
@@ -107,6 +108,11 @@ namespace UAS
             GL.Viewport(0, 0, Size.X, Size.Y);
             Scene.WindowSize = Size;
             base.OnResize(e);
+        }
+
+        protected override void OnMouseMove(MouseMoveEventArgs e)
+        {
+            Scene.MouseMovement(e, this);
         }
     }
 }

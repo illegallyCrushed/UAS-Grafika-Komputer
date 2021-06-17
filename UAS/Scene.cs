@@ -8,6 +8,8 @@ using LearnOpenTK.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
 using System.Linq;
+using System.Windows;
+
 
 namespace UAS
 {
@@ -26,9 +28,11 @@ namespace UAS
 
         public static Matrix4 ProjectionMatrix;
         public static Matrix4 ViewMatrix;
-        public static Vector3 ViewPosition = new Vector3(20, 3, 0);
-        public static Vector3 ViewTo = new Vector3(0, 0, 0);
+        public static Vector3 ViewPosition = new Vector3(20, 0, 0);
+        public static Vector3 ViewTo = new Vector3(-1, 0, 0);
         public static Vector3 ViewUpwards = new Vector3(0, 1, 0);
+        public static float Pitch = 0;
+        public static float Yaw = 180;
         public static Vector3 WireframeColor = new Vector3(0,0,0);
         public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
         //public static Vector3 SkyColor = new Vector3(0, 0, 0);
@@ -124,7 +128,7 @@ namespace UAS
         {
             ProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(FOV.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 0.1f, 100.0f);
 
-            ViewMatrix = Matrix4.LookAt(ViewPosition, ViewTo, ViewUpwards);
+            ViewMatrix = Matrix4.LookAt(ViewPosition, ViewPosition + ViewTo, ViewUpwards);
 
             LightSpaceMatrix.Clear();
             LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
@@ -155,92 +159,109 @@ namespace UAS
                 lightSphere.render();
         }
 
+        public static void MouseMovement(MouseMoveEventArgs e, Window w) {
+
+            float rotatesens = 0.05f;
+
+            w.CursorVisible = false;
+
+            float deltaX = w.Size.X / 2f - e.X;
+            float deltaY = w.Size.Y / 2f - e.Y;
+            Yaw += deltaX * rotatesens;
+            if (Pitch > 89.0f)
+            {
+                Pitch = 89.0f;
+            }
+            else if (Pitch < -89.0f)
+            {
+                Pitch = -89.0f;
+            }
+            else
+            {
+                Pitch -= deltaY * rotatesens;
+            }
+
+            ViewTo.X = (float)Math.Cos(MathHelper.DegreesToRadians(Pitch)) * (float)Math.Cos(MathHelper.DegreesToRadians(Yaw));
+            ViewTo.Y = (float)Math.Sin(MathHelper.DegreesToRadians(Pitch));
+            ViewTo.Z = (float)Math.Cos(MathHelper.DegreesToRadians(Pitch)) * (float)Math.Sin(MathHelper.DegreesToRadians(Yaw));
+            ViewTo.Normalize();
+            w.MousePosition = new Vector2(w.Size.X / 2f, w.Size.Y / 2f);
+        }
+
         public static void Movement(FrameEventArgs e, Window w)
         {
 
-            float speed = 5;
-            float reducespeed = 7.5f;
-            float rotatesens = 0.5f;
+            float speed = 5f;
 
             if (w.KeyboardState.IsKeyDown(Keys.W))
             {
-                ViewPosition -= new Vector3(1, 0, 0) * speed * (float)e.Time;
-                ViewTo -= new Vector3(1, 0, 0) * speed * (float)e.Time;
+                ViewPosition += ViewTo * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.S))
             {
-                ViewPosition += new Vector3(1, 0, 0) * speed * (float)e.Time;
-                ViewTo += new Vector3(1, 0, 0) * speed * (float)e.Time;
+                ViewPosition -= ViewTo * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.A))
             {
-                ViewPosition += new Vector3(0, 0, 1) * speed * (float)e.Time;
-                ViewTo += new Vector3(0, 0, 1) * speed * (float)e.Time;
+                ViewPosition -= Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.D))
             {
-                ViewPosition -= new Vector3(0, 0, 1) * speed * (float)e.Time;
-                ViewTo -= new Vector3(0, 0, 1) * speed * (float)e.Time;
+                ViewPosition += Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
+            }
+
+            if (w.KeyboardState.IsKeyDown(Keys.Space))
+            {
+                ViewPosition += ViewUpwards * speed * (float)e.Time;
+
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.LeftShift))
             {
-                ViewPosition += new Vector3(0, 1, 0) * speed * (float)e.Time;
-                ViewTo += new Vector3(0, 1, 0) * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.LeftControl))
-            {
-                ViewPosition -= new Vector3(0, 1, 0) * speed * (float)e.Time;
-                ViewTo -= new Vector3(0, 1, 0) * speed * (float)e.Time;
+                ViewPosition -= ViewUpwards * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyReleased(Keys.R))
             {
-                scene.setTranslate(0, 0, 0);
-                scene.setRotation(0, 0, 0);
-                scene.translateZ(-8.8f);
-                scene.rotateZ(45f);
-
-                ViewPosition = new Vector3(20, 3, 0);
-                ViewTo = new Vector3(0, 0, 0);
-
+                ViewPosition = new Vector3(20, 0, 0);
+                ViewTo = new Vector3(-1, 0, 0);
+                Yaw = 180.0f;
+                Pitch = 0.0f;
                 FOV = 45f;
-
                 Console.WriteLine("Camera Reset");
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.Up))
             {
-                LightPosition -= new Vector3(1, 0, 0) * speed*3 * (float)e.Time;
+                LightPosition += ViewTo * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.Down))
             {
-                LightPosition += new Vector3(1, 0, 0) * speed*3 * (float)e.Time;
+                LightPosition -= ViewTo * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.Left))
             {
-                LightPosition += new Vector3(0, 0, 1) * speed*3 * (float)e.Time;
+                LightPosition -= Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.Right))
             {
-                LightPosition -= new Vector3(0, 0, 1) * speed*3 * (float)e.Time;
+                LightPosition += Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.RightShift))
             {
-                LightPosition += new Vector3(0, 1, 0) * speed*3 * (float)e.Time;
+                LightPosition += new Vector3(0, 1, 0) * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.RightControl))
             {
-                LightPosition -= new Vector3(0, 1, 0) * speed*3 * (float)e.Time;
+                LightPosition -= new Vector3(0, 1, 0) * speed * (float)e.Time;
             }
 
             if (w.KeyboardState.IsKeyReleased(Keys.L))
@@ -252,29 +273,6 @@ namespace UAS
             }
 
             
-
-
-            float deltaX = w.MouseState.Position.X - w.MouseState.PreviousPosition.X;
-            float deltaY = w.MouseState.Position.Y - w.MouseState.PreviousPosition.Y;
-            if (w.MouseState.IsButtonDown(MouseButton.Button3))
-            {
-                RotateVelocityZ = deltaX * (float)rotatesens;
-            }
-            else if (w.MouseState.IsButtonDown(MouseButton.Button2))
-            {
-                RotateVelocityY = deltaY * (float)rotatesens;
-
-            }
-            else if (w.MouseState.IsButtonDown(MouseButton.Button1))
-            {
-                RotateVelocityX = deltaX * (float)rotatesens;
-            }
-            RotateVelocityX -= (RotateVelocityX - 0) * reducespeed * (float)e.Time;
-            RotateVelocityY -= (RotateVelocityY - 0) * reducespeed * (float)e.Time;
-            RotateVelocityZ -= (RotateVelocityZ - 0) * reducespeed * (float)e.Time;
-            scene.rotateY(RotateVelocityY);
-            scene.rotateZ(RotateVelocityX);
-            scene.rotateX(RotateVelocityZ);
 
             if (w.KeyboardState.IsKeyReleased(Keys.F11)) {
                 if (!Window.ISFULLSCREEN)
@@ -321,14 +319,11 @@ namespace UAS
             {
                 Console.WriteLine("\nControls:");
                 Console.WriteLine("WASD - MOVE CAMERA");
-                Console.WriteLine("LSHIFT - MOVE UP CAMERA");
-                Console.WriteLine("LCTRL - MOVE DOWN CAMERA");
+                Console.WriteLine("SPACE - MOVE UP CAMERA");
+                Console.WriteLine("LSHIFT - MOVE DOWN CAMERA");
                 Console.WriteLine("MOUSEWHEEL - ZOOM IN/OUT CAMERA");
+                Console.WriteLine("MOUSEMOVE - LOOK AROUND");
                 Console.WriteLine("R - RESET CAMERA");
-                Console.WriteLine("");
-                Console.WriteLine("LEFT MOUSE - HORIZONTAL SPIN");
-                Console.WriteLine("RIGHT MOUSE - VERTICAL SPIN");
-                Console.WriteLine("MIDDLE MOUSE - CIRCLE SPIN");
                 Console.WriteLine("");
                 Console.WriteLine("ARROW KEYS - MOVE LIGHT");
                 Console.WriteLine("RSHIFT - MOVE UP LIGHT");
