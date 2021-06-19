@@ -13,36 +13,52 @@ namespace UAS
         public static Animator AwanAnimator1 = new Animator();
         public static Animator AwanAnimator2 = new Animator();
         public static Animator AwanAnimator3 = new Animator();
-		public static Animator TitleAnimator = new Animator();
+        public static Animator TitleAnimator = new Animator();
         public static Animator CerobongAnimator = new Animator();
         public static Animator CerobongAnimator1 = new Animator();
         public static Animator CerobongAnimator2 = new Animator();
 
 
-		public static void Objects(ref Object scene)
+        public static void Objects(ref Object scene)
         {
 
-            //scene.addChild(new Object("Cube"));
+            //scene.addChild(new Object("Cubew"));
             //scene.lastChild().createCube();
-            ////scene.lastChild().material.loadTexture("./container/cont_DIFF.png", "./container/cont_SPEC.png", "", "", "");
             //scene.lastChild().scale(5f);
-            //scene.lastChild().material.loadDiffuse("./cobble/cbl_DIFF.jpg");
-            //scene.lastChild().material.loadSpecular("./cobble/cbl_SPEC.jpg");
-            //scene.lastChild().material.loadNormal("./cobble/cbl_NORM.jpg");
-            //scene.lastChild().material.loadParalax("./cobble/cbl_DISP.jpg");
-            //scene.lastChild().material.loadAmbiOcc("./cobble/cbl_AO.jpg");
-            ////scene.lastChild().material.loadTexture("./cobble/cbl_DIFF.jpg", "./cobble/cbl_SPEC.jpg", "./cobble/cbl_NORM.jpg", "./cobble/cbl_DISP.jpg", "./cobble/cbl_AO.jpg");
-            ////scene.lastChild().material.loadTexture("./brick/brick.jpg", "", "./brick/brick_NORM.jpg", "./brick/brick_DISP.jpg", "");
+            //scene.lastChild().material.loadDiffuse("../../../Assets/cobble/cbl_DIFF.jpg");
+            //scene.lastChild().material.loadSpecular("../../../Assets/cobble/cbl_SPEC.jpg");
+            //scene.lastChild().material.loadNormal("../../../Assets/cobble/cbl_NORM.jpg");
+            //scene.lastChild().material.loadParalax("../../../Assets/cobble/cbl_DISP.jpg");
+            //scene.lastChild().material.loadAmbiOcc("../../../Assets/cobble/cbl_AO.jpg");
+            //Light.GeneratePoint(ref Scene.Lights, "default", new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(0, 5, 0));
+
+            //scene.lastChild().material.loadTexture("../../../Assets/container/cont_DIFF.png", "../../../Assets/container/cont_SPEC.png", "", "", "");
+            ////scene.lastChild().material.loadTexture("../../../Assets/brick/brick.jpg", "", "../../../Assets/brick/brick_NORM.jpg", "../../../Assets/brick/brick_DISP.jpg", "");
             //scene.lastChild().translate(0, 0, 0f);
             //scene.lastChild().centerOrigin();
             //scene.lastChild().setColor(1, 1, 1);
 
-            //scene.LoadModel(ref scene, "./TestOBJ/room/room.glb", "Room");
-            //scene.LoadModel(ref scene, "./TestOBJ/wolf/Wolf-Blender-2.82a.glb", "wolf");
-            scene.LoadModel(ref scene, "./TestOBJ/backpack/backpack.obj", "Backpack");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/chess.glb", "Chess");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/room/room.glb", "Room");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/wolf/Wolf-Blender-2.82a.glb", "wolf");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/backpack/backpack.obj", "Backpack");
+            //scene.findChild("Backpack").scale(5);
+            //scene.findChild("Backpack").scale(5);
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/oldshapes.glb", "light");
+
+            scene.LoadModel(ref scene, "../../../Assets/TestOBJ/lightTest.glb", "light");
+
+            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadDiffuse("../../../Assets/cobble/cbl_DIFF.jpg");
+            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadSpecular("../../../Assets/cobble/cbl_SPEC.jpg");
+            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadNormal("../../../Assets/cobble/cbl_NORM.jpg");
+            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadParalax("../../../Assets/cobble/cbl_DISP.jpg");
+            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadAmbiOcc("../../../Assets/cobble/cbl_AO.jpg");
+
+
+            //Light.GeneratePoint(ref Scene.Lights, "default", new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(0, 5, 0));
+            //Light.GenerateSpot(ref Scene.Lights, "default", new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(0, 10, 0), new Vector3(0, -1, 0),0.95f,0.90f);
             //scene.LoadModel(ref scene, "./irgl/ComingSoon.glb", "irgl");
-
-
+            //scene.LoadModel(ref scene, "./irgl/piramid.glb", "irgl");
 
             //scene.lastChild().material.loadTexture("./cobble/cbl_DIFF.jpg", "./cobble/cbl_SPEC.jpg", "./cobble/cbl_NORM.jpg", "./cobble/cbl_DISP.jpg", "./cobble/cbl_AO.jpg");
 
@@ -2109,56 +2125,57 @@ namespace UAS
             scene.findChild("BigTitleBezier").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
             scene.findChild("BigTitleBezier.001").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
 
-			scene.findChild("Pohon").findChild("DaunPohon.001").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
-			scene.findChild("Pohon").findChild("DaunPohon.002").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
+            scene.findChild("Pohon").findChild("DaunPohon.001").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
+            scene.findChild("Pohon").findChild("DaunPohon.002").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
             scene.findChild("Pohon").findChild("DaunPohon.001").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
             scene.findChild("Pohon").findChild("DaunPohon.002").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
 
-			scene.findChild("Awan").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.001").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.002").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.003").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.004").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.005").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.006").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.007").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
-			scene.findChild("Awan.008").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.001").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.002").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.003").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.004").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.005").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.006").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.007").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            scene.findChild("Awan.008").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
 
 
-			if (CerobongAnimator.Linear() > 0 && CerobongAnimator.Linear() < 1)
-			{
-				scene.findChild("AsapCerobong").translateZ(0.005f);
-				scene.findChild("AsapCerobong").scale(1.004f);
-				scene.findChild("AsapCerobong").material.alpha += 0 - scene.findChild("AsapCerobong").material.alpha * 0.004f;
-			}
-			else { 
-				scene.findChild("AsapCerobong").restoreTransform();
-				scene.findChild("AsapCerobong").material.alpha = 1;
-			}
+            if (CerobongAnimator.Linear() > 0 && CerobongAnimator.Linear() < 1)
+            {
+                scene.findChild("AsapCerobong").translateZ(0.005f);
+                scene.findChild("AsapCerobong").scale(1.004f);
+                scene.findChild("AsapCerobong").material.alpha += 0 - scene.findChild("AsapCerobong").material.alpha * 0.004f;
+            }
+            else
+            {
+                scene.findChild("AsapCerobong").restoreTransform();
+                scene.findChild("AsapCerobong").material.alpha = 1;
+            }
 
-			if (CerobongAnimator1.Linear() > 0.1 && CerobongAnimator.Linear() < 1)
-			{
-				scene.findChild("AsapCerobong.001").translateZ(0.005f);
-				scene.findChild("AsapCerobong.001").scale(1.004f);
-				scene.findChild("AsapCerobong.001").material.alpha += 0 - scene.findChild("AsapCerobong.001").material.alpha * 0.004f;
-			}
-			else
-			{
-				scene.findChild("AsapCerobong.001").restoreTransform();
-				scene.findChild("AsapCerobong.001").material.alpha = 1;
-			}
-			if (CerobongAnimator2.Linear() > 0.2 && CerobongAnimator.Linear() < 1)
-			{
-				scene.findChild("AsapCerobong.002").translateZ(0.005f);
-				scene.findChild("AsapCerobong.002").scale(1.004f);
-				scene.findChild("AsapCerobong.002").material.alpha += 0 - scene.findChild("AsapCerobong.002").material.alpha * 0.004f;
-			}									
-			else								
-			{									
-				scene.findChild("AsapCerobong.002").restoreTransform();
-				scene.findChild("AsapCerobong.002").material.alpha = 1;
-			}
+            if (CerobongAnimator1.Linear() > 0.1 && CerobongAnimator.Linear() < 1)
+            {
+                scene.findChild("AsapCerobong.001").translateZ(0.005f);
+                scene.findChild("AsapCerobong.001").scale(1.004f);
+                scene.findChild("AsapCerobong.001").material.alpha += 0 - scene.findChild("AsapCerobong.001").material.alpha * 0.004f;
+            }
+            else
+            {
+                scene.findChild("AsapCerobong.001").restoreTransform();
+                scene.findChild("AsapCerobong.001").material.alpha = 1;
+            }
+            if (CerobongAnimator2.Linear() > 0.2 && CerobongAnimator.Linear() < 1)
+            {
+                scene.findChild("AsapCerobong.002").translateZ(0.005f);
+                scene.findChild("AsapCerobong.002").scale(1.004f);
+                scene.findChild("AsapCerobong.002").material.alpha += 0 - scene.findChild("AsapCerobong.002").material.alpha * 0.004f;
+            }
+            else
+            {
+                scene.findChild("AsapCerobong.002").restoreTransform();
+                scene.findChild("AsapCerobong.002").material.alpha = 1;
+            }
 
-		}
+        }
     }
 }

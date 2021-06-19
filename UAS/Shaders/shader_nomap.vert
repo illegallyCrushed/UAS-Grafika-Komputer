@@ -7,18 +7,13 @@ out VS_OUT {
     vec3 Normal;
 } vs_out;
 
-uniform mat4 projection;
-uniform mat4 view;
 uniform mat4 model;
-uniform mat4 lightSpaceMatrix;
-uniform bool reverse_normals;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
     vs_out.FragPos =  vec3(vec4(aPos, 1.0) * model);
-    if(reverse_normals) 
-        vs_out.Normal = (-1.0 * aNormal) * mat3(transpose(inverse(model)));
-    else
-        vs_out.Normal = aNormal * mat3(transpose(inverse(model)));
+    vs_out.Normal = aNormal * mat3(transpose(inverse(model)));
     gl_Position = vec4(aPos, 1.0) * model * view * projection;
 }

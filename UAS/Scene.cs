@@ -9,7 +9,10 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
 using System.Linq;
 using System.Windows;
-
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using Image = SixLabors.ImageSharp.Image;
+using SixLabors.ImageSharp.Processing;
 
 namespace UAS
 {
@@ -18,13 +21,15 @@ namespace UAS
 
         public static Shader Shader_NoMap;
         public static Shader Shader_Color;
-        public static Shader Shader_Wireframe;
-        public static Shader Shader_Depth;
+        public static Shader Shader_Flat;
+        public static Shader Shader_DepthCube;
+        public static Shader Shader_DepthPlane;
+        public static Shader Shader_SkyBox;
 
         public static Object scene;
-        public static Object lightSphere;
 
         public static List<ImageStore> TextureLibrary = new List<ImageStore>();
+        public static List<Light> Lights = new List<Light>();
 
         public static Matrix4 ProjectionMatrix;
         public static Matrix4 ViewMatrix;
@@ -33,86 +38,174 @@ namespace UAS
         public static Vector3 ViewUpwards = new Vector3(0, 1, 0);
         public static float Pitch = 0;
         public static float Yaw = 180;
-        public static Vector3 WireframeColor = new Vector3(0,0,0);
-        public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
-        //public static Vector3 SkyColor = new Vector3(0, 0, 0);
+        public static Vector3 WireframeColor = new Vector3(0, 0, 0);
+        //public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
+        public static Vector3 SkyColor = new Vector3(0.1f,0.1f,0.1f);
         public static Vector2i WindowSize;
-        public static float LightFarPlane = 1000.0f;
         public static float FOV = 45.0f;
         public static float RotateVelocityX = 0;
         public static float RotateVelocityY = 0;
         public static float RotateVelocityZ = 0;
-        public static bool ShowLightBall = false;
+
+        public static bool ShowLightBall = true;
         public static bool Wireframe = false;
         public static bool Solids = true;
-        public static int LightMode = 3;
 
-        public static int depthMapFBO;
-        public static int depthMap;
+        public static bool GlobalLighting = true;
+        public static bool GlobalShadow = true;
+        public static int MaxLight = 10;
 
-        public static List<Matrix4> LightSpaceMatrix = new List<Matrix4>();
-        public static Matrix4 LightProjectionMatrix;
-        public static Vector3 LightPosition = new Vector3(10,10,0);
-        public static Vector3 LightColor = new Vector3(1f,1f,1f);
+        private static int _skyBoxVBO;
+        private static int _skyBoxVAO;
+        private static int _skyBoxMap;
+        private static List<Vector3> skyBoxVerts = new List<Vector3>();
+
+        public static void SetSkyBox(List<String> paths)
+        {
+            GL.BindTexture(TextureTarget.TextureCubeMap, _skyBoxMap);
+            for (int i = 0; i < 6; i++)
+            {
+                List<byte> image_pixels;
+
+                byte[] Data;
+                int Width;
+                int Height;
+
+                Image<Rgba32> image = Image.Load<Rgba32>(paths[i]);
+                image_pixels = new List<byte>(4 * image.Width * image.Height);
+                for (int y = 0; y < image.Height; y++)
+                {
+                    var row = image.GetPixelRowSpan(y);
+
+                    for (int x = 0; x < image.Width; x++)
+                    {
+                        image_pixels.Add(row[x].R);
+                        image_pixels.Add(row[x].G);
+                        image_pixels.Add(row[x].B);
+                        image_pixels.Add(row[x].A);
+                    }
+                }
+                Width = image.Width;
+                Height = image.Height;
+                Data = image_pixels.ToArray();
+
+                GL.TexImage2D(TextureTarget.TextureCubeMapPositiveX + i, 0, PixelInternalFormat.Rgba, Width, Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, Data);
+            }
+            GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToEdge);
+            GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToEdge);
+            GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapR, (float)TextureWrapMode.ClampToEdge);
+        }
+
+        public static void RenderSkyBox()
+        {
+            GL.DepthFunc(DepthFunction.Lequal);
+            Shader_SkyBox.Use();
+            Matrix4 ViewMatrixNoScale= new  Matrix4(new  Matrix3(ViewMatrix));
+            Shader_SkyBox.SetMatrix4("view", ViewMatrixNoScale);
+            Shader_SkyBox.SetMatrix4("projection", ProjectionMatrix);
+            Shader_SkyBox.SetInt("skybox", 0);
+            GL.BindVertexArray(_skyBoxVAO);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.TextureCubeMap, _skyBoxMap);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, skyBoxVerts.Count());
+            GL.BindVertexArray(0);
+            GL.DepthFunc(DepthFunction.Less);
+        }
+
         public static void SetScene(Vector2i Size)
         {
-            if (Window.ENABLE_SHADOW)
-            {
-                depthMap = GL.GenTexture();
-                GL.BindTexture(TextureTarget.TextureCubeMap, depthMap);
-                for (int i = 0; i < 6; ++i)
-                    GL.TexImage2D(TextureTarget.TextureCubeMapPositiveX + i, 0, PixelInternalFormat.DepthComponent, Window.SHADOW_RESOLUTION, Window.SHADOW_RESOLUTION, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
 
-                GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-                GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.TextureWrapR, (float)TextureWrapMode.ClampToEdge);
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, 1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, -1.0f));
+            skyBoxVerts.Add(new Vector3(-1.0f, -1.0f, 1.0f));
+            skyBoxVerts.Add(new Vector3(1.0f, -1.0f, 1.0f));
+            _skyBoxMap = GL.GenTexture();
 
-                depthMapFBO = GL.GenFramebuffer();
+            _skyBoxVBO = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _skyBoxVBO);
+            GL.BufferData<Vector3>(BufferTarget.ArrayBuffer,
+                skyBoxVerts.Count * Vector3.SizeInBytes,
+                skyBoxVerts.ToArray(),
+                BufferUsageHint.StaticDraw);
 
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
-                GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, depthMap, 0);
-                GL.DrawBuffer(DrawBufferMode.None);
-                GL.ReadBuffer(ReadBufferMode.None);
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            }
+            _skyBoxVAO = GL.GenVertexArray();
+            GL.BindVertexArray(_skyBoxVAO);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _skyBoxVBO);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(0);
 
             WindowSize = Size;
 
+            Console.WriteLine("Init NoMap Shader");
             Shader_NoMap = new Shader("../../../Shaders/shader_nomap.vert", "../../../Shaders/shader_nomap.frag");
+            Console.WriteLine("Init Color Shader");
             Shader_Color = new Shader("../../../Shaders/shader.vert", "../../../Shaders/shader.frag");
-            Shader_Wireframe = new Shader("../../../Shaders/shader_line.vert", "../../../Shaders/shader_line.frag");
-            Shader_Depth = new Shader("../../../Shaders/shader_depth.vert", "../../../Shaders/shader_depth.frag", "../../../Shaders/shader_depth.geom");
+            Console.WriteLine("Init Flat Shader");
+            Shader_Flat = new Shader("../../../Shaders/shader_flat.vert", "../../../Shaders/shader_flat.frag");
+            Console.WriteLine("Init DepthCube Shader");
+            Shader_DepthCube = new Shader("../../../Shaders/shader_depthcube.vert", "../../../Shaders/shader_depthcube.frag", "../../../Shaders/shader_depthcube.geom");
+            Console.WriteLine("Init DepthPlane Shader");
+            Shader_DepthPlane = new Shader("../../../Shaders/shader_depthplane.vert", "../../../Shaders/shader_depthplane.frag");
+            Console.WriteLine("Init SkyBox Shader");
+            Shader_SkyBox = new Shader("../../../Shaders/shader_skybox.vert", "../../../Shaders/shader_skybox.frag");
 
-            LightProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(90f.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 1f, LightFarPlane);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(-1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 1, 0), new Vector3(0, 0, 1)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, -1, 0), new Vector3(0, 0, -1)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 0, 1), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 0, -1), new Vector3(0, -1, 0)) * LightProjectionMatrix);
+            List<String> faces = new List<String>();
+            faces.Add("../../../Assets/skybox/night/right.jpg");
+            faces.Add("../../../Assets/skybox/night/left.jpg");
+            faces.Add("../../../Assets/skybox/night/top.jpg");
+            faces.Add("../../../Assets/skybox/night/bottom.jpg");
+            faces.Add("../../../Assets/skybox/night/front.jpg");
+            faces.Add("../../../Assets/skybox/night/back.jpg");
 
+            SetSkyBox(faces);
 
             scene = new Object("scene");
 
-            
-             //Leonando.Objects(ref scene);
-             //Jeremy.Objects(ref scene);
-             Nicholas.Objects(ref scene);
+
+            //Leonando.Objects(ref scene);
+            //Jeremy.Objects(ref scene);
+            Nicholas.Objects(ref scene);
 
 
             //scene.translateZ(-8.8f);
             //scene.rotateZ(45f);
             scene.init();
 
-            lightSphere = new Object("lightsphere");
-            lightSphere.createCube();
-            lightSphere.material.loadDiffuse("test.jpg");
-            lightSphere.scale(1);
-            lightSphere.setTranslate(LightPosition.X, -LightPosition.Z, LightPosition.Y);
-            lightSphere.setColor(255, 245, 166);
-            lightSphere.init();
         }
 
         public static void AnimateScene()
@@ -126,40 +219,38 @@ namespace UAS
         }
         public static void RenderScene()
         {
-            ProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(FOV.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 0.1f, 100.0f);
+            ProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(FOV.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 0.001f, 10000.0f);
 
             ViewMatrix = Matrix4.LookAt(ViewPosition, ViewPosition + ViewTo, ViewUpwards);
 
-            LightSpaceMatrix.Clear();
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(-1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 1, 0), new Vector3(0, 0, 1)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, -1, 0), new Vector3(0, 0, -1)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 0, 1), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            LightSpaceMatrix.Add(Matrix4.LookAt(LightPosition, LightPosition + new Vector3(0, 0, -1), new Vector3(0, -1, 0)) * LightProjectionMatrix);
-            lightSphere.setTranslate(LightPosition.X, -LightPosition.Z, LightPosition.Y);
 
-            if (Window.ENABLE_SHADOW)
+
+            // get shadow, 1st pass
+            if (GlobalShadow)
             {
-                // get depth, 1st pass
-                GL.Viewport(0, 0, Window.SHADOW_RESOLUTION, Window.SHADOW_RESOLUTION);
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
-                GL.Clear(ClearBufferMask.DepthBufferBit);
-                scene.renderDepth();
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-                GL.Viewport(0, 0, WindowSize.X, WindowSize.Y);
-                GL.ActiveTexture(TextureUnit.Texture0);
-                GL.BindTexture(TextureTarget.TextureCubeMap, depthMap);
+                foreach (var light in Scene.Lights)
+                {
+                    light.calculateShadow(ref scene);
+                }
             }
 
             // render color, 2nd pass
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             scene.render();
-            if(ShowLightBall)
-                lightSphere.render();
+            if (ShowLightBall)
+            {
+                foreach (var light in Scene.Lights)
+                {
+                    light.renderLightCube();
+                }
+            }
+
+            // render skymap, 3st pass
+            RenderSkyBox();
         }
 
-        public static void MouseMovement(MouseMoveEventArgs e, Window w) {
+        public static void MouseMovement(MouseMoveEventArgs e, Window w)
+        {
 
             float rotatesens = 0.05f;
 
@@ -234,47 +325,8 @@ namespace UAS
                 Console.WriteLine("Camera Reset");
             }
 
-            if (w.KeyboardState.IsKeyDown(Keys.Up))
+            if (w.KeyboardState.IsKeyReleased(Keys.F11))
             {
-                LightPosition += ViewTo * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.Down))
-            {
-                LightPosition -= ViewTo * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.Left))
-            {
-                LightPosition -= Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.Right))
-            {
-                LightPosition += Vector3.Normalize(Vector3.Cross(ViewTo, ViewUpwards)) * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.RightShift))
-            {
-                LightPosition += new Vector3(0, 1, 0) * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyDown(Keys.RightControl))
-            {
-                LightPosition -= new Vector3(0, 1, 0) * speed * (float)e.Time;
-            }
-
-            if (w.KeyboardState.IsKeyReleased(Keys.L))
-            {
-
-                LightPosition = new Vector3(10,10, 0);
-
-                Console.WriteLine("Light Reset");
-            }
-
-            
-
-            if (w.KeyboardState.IsKeyReleased(Keys.F11)) {
                 if (!Window.ISFULLSCREEN)
                 {
                     w.WindowBorder = WindowBorder.Hidden;
@@ -282,7 +334,8 @@ namespace UAS
                     GL.Viewport(0, 0, w.Size.X, w.Size.Y);
                     WindowSize = w.Size;
                 }
-                else {
+                else
+                {
 
                     w.WindowBorder = WindowBorder.Resizable;
                     w.WindowState = WindowState.Normal;
@@ -295,8 +348,8 @@ namespace UAS
 
             if (w.KeyboardState.IsKeyReleased(Keys.F10))
             {
-                Window.ENABLE_SHADOW = !Window.ENABLE_SHADOW;
-                Console.WriteLine("Toggle Shadow = " + Window.ENABLE_SHADOW);
+                Scene.GlobalShadow = !Scene.GlobalShadow;
+                Console.WriteLine("Toggle Shadow = " + Scene.GlobalShadow);
             }
 
             if (w.KeyboardState.IsKeyReleased(Keys.F9))
@@ -307,7 +360,7 @@ namespace UAS
 
             if (w.KeyboardState.IsKeyReleased(Keys.F8))
             {
-                Solids =! Solids;
+                Solids = !Solids;
                 Console.WriteLine("Toggle Solids = " + Solids);
             }
             if (w.KeyboardState.IsKeyReleased(Keys.F7))
@@ -324,11 +377,6 @@ namespace UAS
                 Console.WriteLine("MOUSEWHEEL - ZOOM IN/OUT CAMERA");
                 Console.WriteLine("MOUSEMOVE - LOOK AROUND");
                 Console.WriteLine("R - RESET CAMERA");
-                Console.WriteLine("");
-                Console.WriteLine("ARROW KEYS - MOVE LIGHT");
-                Console.WriteLine("RSHIFT - MOVE UP LIGHT");
-                Console.WriteLine("RCTRL - MOVE DOWN LIGHT");
-                Console.WriteLine("L - RESET LIGHT");
                 Console.WriteLine("");
                 Console.WriteLine("F1 - SHOW HELP");
                 Console.WriteLine("F7 - TOGGLE WIREFRAMES");

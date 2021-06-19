@@ -252,7 +252,6 @@ namespace LearnOpenTK.Common
             GL.UniformMatrix4(_uniformLocations[name], true, ref data);
         }
 
-
         /// <summary>
         /// Set a uniform Vector3 on this shader.
         /// </summary>

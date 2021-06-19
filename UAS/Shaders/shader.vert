@@ -7,20 +7,17 @@ layout (location = 4) in vec2 aTexCoord;
 
 out VS_OUT {
     vec3 FragPos;
-    vec3 TangentLightPos;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec2 TexCoord;
     mat3 TBN;
 } vs_out;
 
-uniform vec3 viewPosB;
-uniform vec3 lightPosB;
-
-uniform mat4 projection;
-uniform mat4 view;
 uniform mat4 model;
-uniform mat4 lightSpaceMatrix;
+uniform mat4 view;
+uniform mat4 projection;
+
+uniform vec3 viewPosB;
 
 void main()
 {
@@ -35,7 +32,6 @@ void main()
 
     vs_out.TBN = mat3(T,B,N);
 
-    vs_out.TangentLightPos = lightPosB * vs_out.TBN;
     vs_out.TangentViewPos  = viewPosB * vs_out.TBN;
     vs_out.TangentFragPos  = vs_out.FragPos * vs_out.TBN;
 

@@ -1,21 +1,11 @@
-﻿using LearnOpenTK.Common;
-using OpenTK.Mathematics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using OpenTK.Graphics.OpenGL4;
-using System.Globalization;
 using System.Linq;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using Assimp.Configs;
 using Assimp;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
-using TextureWrapMode = OpenTK.Graphics.OpenGL4.TextureWrapMode;
 using Quaternion = OpenTK.Mathematics.Quaternion;
 
 namespace UAS
@@ -32,12 +22,6 @@ namespace UAS
         private int _bitangentsBufferObject;
         private int _texcoordsBufferObject;
 
-        public bool lock_diff = false;
-        public bool lock_spec = false;
-        public bool lock_norm = false;
-        public bool lock_para = false;
-        public bool lock_ambi = false;
-
         // Vectors
         private List<Vector3> vertices = new List<Vector3>();
         private List<Vector3> normals = new List<Vector3>();
@@ -50,10 +34,10 @@ namespace UAS
 
         // Transformation
 
-        private Matrix4 processed_transform;
-        private Matrix4 object_transform;
-        private Matrix4 origin_transform;
-        private Matrix4 saved_transform;
+        public Matrix4 processed_transform;
+        public Matrix4 object_transform;
+        public Matrix4 origin_transform;
+        public Matrix4 saved_transform;
 
         public Object parent;
 
@@ -76,7 +60,7 @@ namespace UAS
             processed_transform = Matrix4.Identity;
             this.name = name;
         }
-
+        
         //Initialization
         public void init()
         {
@@ -181,24 +165,114 @@ namespace UAS
             Assimp.Scene newobj;
             AssimpContext importer = new AssimpContext();
             newobj = importer.ImportFile(path, PostProcessSteps.Triangulate);
-            List<ImageStore> ImgLib = new List<ImageStore>();
             String parDir = Path.GetDirectoryName(path);
             parDir += "\\";
 
             Object model = new Object(groupname);
 
-            List<byte[]> texLib = new List<byte[]>();
-
             // process mesh nodes
-            processNodes(newobj.RootNode, newobj, model, parDir,ref ImgLib);
+            processNodes(newobj.RootNode, newobj, model, parDir);
+
+            if (newobj.HasLights)
+            {
+
+                Console.WriteLine("**LIGHT DETECTED**");
+                foreach (var light in newobj.Lights)
+                {
+                    Assimp.Node parentNode = newobj.RootNode.FindNode(light.Name).Parent;
+                    Assimp.Matrix4x4 ps = parentNode.Transform;
+                    Console.WriteLine(String.Format("Name: {0}", parentNode.Name));
+                    String name = parentNode.Name;
+
+                    Console.WriteLine("");
+
+                    Vector3 initpos = new Vector3(light.Position.X, light.Position.Y, light.Position.Z);
+                    Vector3 initdir = new Vector3(0, 1, 0);
+
+                    Console.WriteLine(String.Format("InitPos: {0}, {1}, {2}", initpos.X, initpos.Y, initpos.Z));
+                    Console.WriteLine(String.Format("InitDir: {0}, {1}, {2}", initdir.X, initdir.Y, initdir.Z));
+
+                    Matrix4 partrans = new Matrix4(new Vector4(ps.A1, ps.A2, ps.A3, ps.A4), new Vector4(ps.B1, ps.B2, ps.B3, ps.B4), new Vector4(ps.C1, ps.C2, ps.C3, ps.C4), new Vector4(ps.D1, ps.D2, ps.D3, ps.D4));
+
+                    partrans.Transpose();
+
+                    Vector4 calcpos = new Vector4(initpos, 1.0f) * partrans;
+                    Vector4 calcdir = new Vector4(initdir, 1.0f) * partrans;
+
+                    Vector3 position = calcpos.Xyz;
+                    Vector3 direction = calcdir.Xyz - position;
+
+                    direction = new Vector3(-direction.X, -direction.Y, -direction.Z);
+
+                    Console.WriteLine(String.Format("CalcPos: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                    Console.WriteLine(String.Format("CalcDir: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+                    Console.WriteLine("");
+
+                    Console.WriteLine("Original Transform");
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M11, partrans.M12, partrans.M13, partrans.M14));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M21, partrans.M22, partrans.M23, partrans.M24));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M31, partrans.M32, partrans.M33, partrans.M34));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M41, partrans.M42, partrans.M43, partrans.M44));
+
+                    Matrix4 lookattrans = Matrix4.LookAt(position, position + direction, new Vector3(0, 0, 1));
+
+                    Console.WriteLine("Processed Transform");
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M11, lookattrans.M12, lookattrans.M13, lookattrans.M14));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M21, lookattrans.M22, lookattrans.M23, lookattrans.M24));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M31, lookattrans.M32, lookattrans.M33, lookattrans.M34));
+                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M41, lookattrans.M42, lookattrans.M43, lookattrans.M44));
+
+
+                    Vector3 ambient = new Vector3(light.ColorAmbient.R, light.ColorAmbient.G, light.ColorAmbient.B);
+                    Vector3 diffuse = new Vector3(light.ColorDiffuse.R, light.ColorDiffuse.G, light.ColorDiffuse.B);
+                    Vector3 specular = new Vector3(light.ColorSpecular.R, light.ColorSpecular.G, light.ColorSpecular.B);
+
+                    ambient = ambient  /225;
+                    diffuse = diffuse / 225;
+                    specular = specular / 225;
+
+                    Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                    Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                    Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
+                    if (light.LightType == LightSourceType.Directional)
+                    {
+                        Console.WriteLine(String.Format("Type: Directional"));
+                        Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+                        Light.GenerateDirectional(ref Scene.Lights, name, ambient, diffuse, specular, direction);
+                    }
+
+                    if (light.LightType == LightSourceType.Point)
+                    {
+                        Console.WriteLine(String.Format("Type: Point"));
+                        Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                        Light.GeneratePoint(ref Scene.Lights, name, ambient, diffuse, specular, position);
+                    }
+
+                    if (light.LightType == LightSourceType.Spot)
+                    {
+                        Console.WriteLine(String.Format("Type: Spot"));
+                        Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                        Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+                        float innerCutOff = light.AngleInnerCone;
+                        float outerCutOff = light.AngleOuterCone;
+                        Console.WriteLine(String.Format("Cutoff: {0}, {1}", innerCutOff, outerCutOff));
+                        Light.GenerateSpot(ref Scene.Lights, name, ambient, diffuse, specular, position, direction, outerCutOff * 2, innerCutOff * 2);
+                    }
+                    Console.WriteLine();
+                }
+            }
+
+
             parent.addChild(model);
         }
 
-        private void processNodes(Assimp.Node node, Assimp.Scene scene, Object model, String parDir,ref List<ImageStore> ImgLib)
+        private void processNodes(Assimp.Node node, Assimp.Scene scene, Object model, String parDir)
         {
             Console.Write("\n##NODE - ");
             Console.Write(node.Name);
             Console.Write("\n");
+
+
             foreach (var meshindex in node.MeshIndices)
             {
                 Assimp.Mesh mesh = scene.Meshes[meshindex];
@@ -236,6 +310,10 @@ namespace UAS
                     if (mesh.HasTextureCoords(0))
                     {
                         new_texcoords.Add(new Vector2(mesh.TextureCoordinateChannels[0][i].X, mesh.TextureCoordinateChannels[0][i].Y));
+                    }
+                    else
+                    {
+                        new_texcoords.Add(new Vector2(0, 0));
                     }
                 }
 
@@ -405,8 +483,9 @@ namespace UAS
             foreach (var child in node.Children)
             {
                 model.addChild(new Object(child.Name));
-                processNodes(child, scene, model.lastChild(), parDir,ref ImgLib);
+                processNodes(child, scene, model.lastChild(), parDir);
             }
+
             Matrix4x4 ps = node.Transform;
             Matrix4 partrans = new Matrix4(new Vector4(ps.A1, ps.A2, ps.A3, ps.A4), new Vector4(ps.B1, ps.B2, ps.B3, ps.B4), new Vector4(ps.C1, ps.C2, ps.C3, ps.C4), new Vector4(ps.D1, ps.D2, ps.D3, ps.D4));
             partrans.Transpose();
@@ -652,39 +731,39 @@ namespace UAS
 
             object_transform = saved_transform;
         }
-        public void renderDepth()
+        public void renderDepth(Light light)
         {
             if (vertices.Count > 0)
             {
-                Scene.Shader_Depth.Use();
-
-                Scene.Shader_Depth.SetMatrix4("model", processed_transform);
-                for (int i = 0; i < 6; ++i)
-                    Scene.Shader_Depth.SetMatrix4("shadowMatrices" + i.ToString(), Scene.LightSpaceMatrix[i]);
-                Scene.Shader_Depth.SetFloat("far_plane", Scene.LightFarPlane);
-                Scene.Shader_Depth.SetVector3("lightPos", Scene.LightPosition);
-
                 GL.BindVertexArray(_vertexArrayObject);
+                if (light.lightType == Light.Directional)
+                {
+                    Scene.Shader_DepthPlane.SetMatrix4("model", processed_transform);
+                    Scene.Shader_DepthPlane.SetMatrix4("lightSpaceMatrix", light.LightSpaceMatrix[0]);
+                    Scene.Shader_DepthPlane.Use();
+                }
+                else
+                {
+                    Scene.Shader_DepthCube.SetMatrix4("model", processed_transform);
+                    for (int i = 0; i < 6; ++i)
+                        Scene.Shader_DepthCube.SetMatrix4("shadowMatrices" + i.ToString(), light.LightSpaceMatrix[i]);
+                    Scene.Shader_DepthCube.SetFloat("far_plane", light.farPlane);
+                    Scene.Shader_DepthCube.SetVector3("lightPos", light.position);
+                    Scene.Shader_DepthCube.Use();
+                }
                 if (Scene.Solids)
                 {
                     GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
                 }
-                if (Scene.Wireframe)
-                {
-                    GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-                    GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
-                    GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-                }
-
                 GL.BindVertexArray(0);
             }
 
             foreach (var child in children)
             {
-                child.renderDepth();
+                child.renderDepth(light);
             }
         }
-        public void render()
+        public void render(bool onlyshape = false)
         {
             if (vertices.Count > 0)
             {
@@ -698,58 +777,116 @@ namespace UAS
                 GL.BindTexture(TextureTarget.Texture2D, material.paraHandle);
                 GL.ActiveTexture(TextureUnit.Texture5);
                 GL.BindTexture(TextureTarget.Texture2D, material.ambiHandle);
+                for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
+                {
+                    GL.ActiveTexture(TextureUnit.Texture10 + i);
+                    GL.BindTexture(TextureTarget.TextureCubeMap, Scene.Lights[i].shadowMap);
+                }
 
-                Scene.Shader_Wireframe.SetMatrix4("mvp_transform", processed_transform * Scene.ViewMatrix * Scene.ProjectionMatrix);
-                Scene.Shader_Wireframe.SetVector3("lineColor", Scene.WireframeColor);
+                Scene.Shader_Flat.SetMatrix4("mvp_transform", processed_transform * Scene.ViewMatrix * Scene.ProjectionMatrix);
+                if (onlyshape)
+                    Scene.Shader_Flat.SetVector3("flatColor", material.diffuse);
+                else
+                    Scene.Shader_Flat.SetVector3("flatColor", Scene.WireframeColor);
+                
 
-                Scene.Shader_Color.SetFloat("far_plane", Scene.LightFarPlane);
+                // color vertex
                 Scene.Shader_Color.SetMatrix4("model", processed_transform);
                 Scene.Shader_Color.SetMatrix4("view", Scene.ViewMatrix);
                 Scene.Shader_Color.SetMatrix4("projection", Scene.ProjectionMatrix);
-                Scene.Shader_Color.SetInt("simple", Scene.LightMode);
-                Scene.Shader_Color.SetVector3("material.ambient", material.diffuse * new Vector3(0.9f, 0.9f, 0.9f));
-                Scene.Shader_Color.SetVector3("material.diffuse", material.diffuse);
-                Scene.Shader_Color.SetVector3("material.specular", material.specular);
-                Scene.Shader_Color.SetFloat("material.shininess", (float)material.specularExponent);
-                Scene.Shader_Color.SetFloat("alpha", material.alpha);
-                //Scene.Shader_Color.SetVector3("lightPosB", Scene.LightPosition);
-                Scene.Shader_Color.SetVector3("light.position", Scene.LightPosition);
-                Scene.Shader_Color.SetVector3("light.ambient", Scene.LightColor);
-                Scene.Shader_Color.SetVector3("light.diffuse", Scene.LightColor);
-                Scene.Shader_Color.SetVector3("light.specular", Scene.LightColor);
                 Scene.Shader_Color.SetVector3("viewPosB", Scene.ViewPosition);
-                Scene.Shader_Color.SetVector3("viewPos", Scene.ViewPosition);
-                Scene.Shader_Color.SetInt("shadowenable", Window.ENABLE_SHADOW ? 1 : 0);
-                Scene.Shader_Color.SetFloat("height_scale", material.dispHeight);
-                Scene.Shader_Color.SetInt("depthMap", 0);
+                // maps
                 Scene.Shader_Color.SetInt("diffMap", 1);
                 Scene.Shader_Color.SetInt("specMap", 2);
                 Scene.Shader_Color.SetInt("normMap", 3);
                 Scene.Shader_Color.SetInt("paraMap", 4);
                 Scene.Shader_Color.SetInt("ambiMap", 5);
+                // others
+                Scene.Shader_Color.SetVector3("viewPos", Scene.ViewPosition);
+                Scene.Shader_Color.SetInt("globallighting", Scene.GlobalLighting == true ? 1 : 0);
+                Scene.Shader_Color.SetInt("globalshadow", Scene.GlobalShadow == true ? 1 : 0);
+                Scene.Shader_Color.SetFloat("height_scale", material.dispHeight);
+                // lights and materials
+                Scene.Shader_Color.SetVector3("material.ambient", material.diffuse);
+                Scene.Shader_Color.SetVector3("material.diffuse", material.diffuse);
+                Scene.Shader_Color.SetVector3("material.specular", material.specular);
+                Scene.Shader_Color.SetFloat("material.shininess", (float)material.specularExponent);
+                Scene.Shader_Color.SetFloat("material.alpha", material.alpha);
+                Scene.Shader_Color.SetFloat("material.ambiance", material.ambiance);
+                Scene.Shader_Color.SetInt("lightCount", (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight));
+                for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
+                {
+                    // 1 = directional;
+                    // 2 = point;
+                    // 3 = specular;
+                    Scene.Shader_Color.SetInt(String.Format("lights[{0}].lightType", i), Scene.Lights[i].lightType);
+                    // positional
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
+                    // light color
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].diffuse);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular);
+                    // spot light cone cutoff
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
+                    // attenuation
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
+                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].farPlane", i), Scene.Lights[i].farPlane);
+                    // cast shadow 0 : not
+                    Scene.Shader_Color.SetInt(String.Format("lights[{0}].castShadow", i), Scene.Lights[i].castShadow);
+                    Scene.Shader_Color.SetInt(String.Format("lights[{0}].shadowMap", i), 10 + i);
+                }
 
-                Scene.Shader_NoMap.SetFloat("far_plane", Scene.LightFarPlane);
-                Scene.Shader_NoMap.SetInt("simple", Scene.LightMode);
+
+                // nomap vertex
                 Scene.Shader_NoMap.SetMatrix4("model", processed_transform);
                 Scene.Shader_NoMap.SetMatrix4("view", Scene.ViewMatrix);
                 Scene.Shader_NoMap.SetMatrix4("projection", Scene.ProjectionMatrix);
-                Scene.Shader_NoMap.SetVector3("material.ambient", material.diffuse * new Vector3(0.9f, 0.9f, 0.9f));
+                // others
+                Scene.Shader_NoMap.SetVector3("viewPos", Scene.ViewPosition);
+                Scene.Shader_NoMap.SetInt("globallighting", Scene.GlobalLighting == true ? 1 : 0);
+                Scene.Shader_NoMap.SetInt("globalshadow", Scene.GlobalShadow == true ? 1 : 0);
+                // lights and materials
+                Scene.Shader_NoMap.SetVector3("material.ambient", material.ambient);
                 Scene.Shader_NoMap.SetVector3("material.diffuse", material.diffuse);
                 Scene.Shader_NoMap.SetVector3("material.specular", material.specular);
                 Scene.Shader_NoMap.SetFloat("material.shininess", (float)material.specularExponent);
-                Scene.Shader_NoMap.SetFloat("alpha", material.alpha);
-                Scene.Shader_NoMap.SetVector3("light.position", Scene.LightPosition);
-                Scene.Shader_NoMap.SetVector3("light.ambient", Scene.LightColor);
-                Scene.Shader_NoMap.SetVector3("light.diffuse", Scene.LightColor);
-                Scene.Shader_NoMap.SetVector3("light.specular", Scene.LightColor);
-                Scene.Shader_NoMap.SetVector3("viewPos", Scene.ViewPosition);
-                Scene.Shader_NoMap.SetInt("shadowenable", Window.ENABLE_SHADOW ? 1 : 0);
-                Scene.Shader_NoMap.SetInt("depthMap", 0);
-
+                Scene.Shader_NoMap.SetFloat("material.alpha", material.alpha);
+                Scene.Shader_NoMap.SetFloat("material.ambiance", material.ambiance);
+                Scene.Shader_NoMap.SetInt("lightCount", (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight));
+                for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
+                {
+                    // 1 = directional;
+                    // 2 = point;
+                    // 3 = specular;
+                    Scene.Shader_NoMap.SetInt(String.Format("lights[{0}].lightType", i), Scene.Lights[i].lightType);
+                    // positional
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
+                    // light color
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].ambient);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular);
+                    // spot light cone cutoff
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
+                    // attenuation
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
+                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].farPlane", i), Scene.Lights[i].farPlane);
+                    // cast shadow 0 : not
+                    Scene.Shader_NoMap.SetInt(String.Format("lights[{0}].castShadow", i), Scene.Lights[i].castShadow);
+                    // directional
+                    Scene.Shader_NoMap.SetInt(String.Format("lights[{0}].shadowMap", i), 10 + i);
+                }
 
                 GL.BindVertexArray(_vertexArrayObject);
 
-                if (Scene.Solids)
+                if (Scene.Solids && !onlyshape)
                 {
                     if (texcoords.Count > 0)
                         Scene.Shader_Color.Use();
@@ -757,10 +894,11 @@ namespace UAS
                         Scene.Shader_NoMap.Use();
                     GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
                 }
-                if (Scene.Wireframe)
+                if (Scene.Wireframe || onlyshape)
                 {
-                    Scene.Shader_Wireframe.Use();
-                    GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+                    Scene.Shader_Flat.Use();
+                    if(!onlyshape)
+                        GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
                     GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
                     GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
                 }
@@ -784,6 +922,17 @@ namespace UAS
             children = new List<Object>();
             vertexIndices = new List<uint>();
             init();
+        }
+
+        public static Object FindObject(Object scene, String name) {
+            foreach (var child in scene.children)
+            {
+                Object check = FindObject(child, name);
+                if (check.name == name) {
+                    return check;
+                }
+            }
+            return new Object("");
         }
 
         public Object findChild(string name)
@@ -938,7 +1087,6 @@ namespace UAS
                     normals.Add(new Vector3(x, -z, y));
                     float perH = (float)j / (float)((float)hCount / (float)divide);
                     float perV = (float)i / (float)((float)vCount);
-                    texcoords.Add(new Vector2(perH, perV));
 
                     //vertices.Add(new Vector3(x, y, z));
                     //normals.Add(new Vector3(x, y, z));
@@ -946,7 +1094,6 @@ namespace UAS
             }
             vertices.Add(new Vector3(0, 0, 0));
             normals.Add(new Vector3(0, 1, 0));
-            texcoords.Add(new Vector2(1, 1));
 
 
             uint k1, k2;
@@ -983,550 +1130,549 @@ namespace UAS
                     }
                 }
             }
-            generateTangentsBitangents();
             init();
             //rotateX(90f);
             centerOrigin();
         }
 
-        //public void createCylinder(float percent = 1, float topdia = 1)
+        public void createCylinder(float percent = 1, float topdia = 1)
+        {
+            delete();
+            float length = 1;
+            float botdia = 1;
+            int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
+            int hCount = sharpness;
+            int vCount = 1;
+            float divide = 1 / percent;
+            float PI = (float)Math.PI;
+            float hStep = 2 * PI / hCount;
+            float vStep = length / vCount;
+            float hAngle, vAngle;
+
+            for (int i = 0; i <= vCount; i++)
+            {
+                vAngle = i * vStep;
+
+                for (int j = 0; j <= hCount / divide; j++)
+                {
+                    hAngle = j * hStep;
+                    float x = 0;
+                    float y = 0;
+                    if (i == 0)
+                    {
+                        x = topdia / 2 * (float)Math.Cos(hAngle);
+                        y = topdia / 2 * (float)Math.Sin(hAngle);
+                    }
+                    else if (i == 1)
+                    {
+                        x = botdia / 2 * (float)Math.Cos(hAngle);
+                        y = botdia / 2 * (float)Math.Sin(hAngle);
+                    }
+
+                    float z = vAngle - length / 2;
+
+                    //patch rotation dibawah
+                    vertices.Add(new Vector3(x, -z, y));
+                    normals.Add(new Vector3(x, -z, y));
+
+                    //vertices.Add(new Vector3(x, y, z));
+                    //normals.Add(new Vector3(x, y, z));
+                }
+            }
+
+            vertices.Add(new Vector3(0, length / 2, 0));
+            normals.Add(new Vector3(0, 1, 0));
+
+            vertices.Add(new Vector3(0, -length / 2, 0));
+            normals.Add(new Vector3(0, -1, 0));
+
+            //vertices.Add(new Vector3(0, 0, -length / 2));
+            //normals.Add(new Vector3(0, 0, -length / 2));
+
+            //vertices.Add(new Vector3(0, 0, length / 2));
+            //normals.Add(new Vector3(0, 0, length / 2));
+
+            uint k1, k2;
+            for (int i = 0; i < vCount; i++)
+            {
+                k1 = (uint)i * ((uint)(hCount / divide) + 1);
+                k2 = (uint)k1 + (uint)(hCount / divide) + 1;
+
+                for (int j = 0; j < hCount / divide; j++, k1++, k2++)
+                {
+                    vertexIndices.Add(k1);
+                    vertexIndices.Add(k2);
+                    vertexIndices.Add(k1 + 1);
+
+                    vertexIndices.Add(k1 + 1);
+                    vertexIndices.Add(k2);
+                    vertexIndices.Add(k2 + 1);
+
+                    if (i == 0)
+                    {
+                        vertexIndices.Add(k1);
+                        vertexIndices.Add((uint)vertices.Count - 2);
+                        vertexIndices.Add(k1 + 1);
+
+                    }
+
+                    vertexIndices.Add(k2);
+                    vertexIndices.Add((uint)vertices.Count - 1);
+                    vertexIndices.Add(k2 + 1);
+                }
+            }
+
+            init();
+            //rotateX(90f);
+            centerOrigin();
+        }
+
+        public void createCone(float percent = 1)
+        {
+            createCylinder(percent, 0);
+        }
+
+        //public void createCapsule(float length = 1, float percent = 1)
         //{
+
         //    delete();
-        //    float length = 1;
-        //    float botdia = 1;
-        //    int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
-        //    int hCount = sharpness;
-        //    int vCount = 1;
-        //    float divide = 1 / percent;
-        //    float PI = (float)Math.PI;
-        //    float hStep = 2 * PI / hCount;
-        //    float vStep = length / vCount;
-        //    float hAngle, vAngle;
 
-        //    for (int i = 0; i <= vCount; i++)
-        //    {
-        //        vAngle = i * vStep;
+        //    addChild(new Object(name + ".top"));
+        //    lastChild().createBall(0.5f);
+        //    lastChild().rotateZ(180.0f);
+        //    lastChild().translateY(0.5f);
+        //    lastChild().centerOrigin();
 
-        //        for (int j = 0; j <= hCount / divide; j++)
-        //        {
-        //            hAngle = j * hStep;
-        //            float x = 0;
-        //            float y = 0;
-        //            if (i == 0)
-        //            {
-        //                x = topdia / 2 * (float)Math.Cos(hAngle);
-        //                y = topdia / 2 * (float)Math.Sin(hAngle);
-        //            }
-        //            else if (i == 1)
-        //            {
-        //                x = botdia / 2 * (float)Math.Cos(hAngle);
-        //                y = botdia / 2 * (float)Math.Sin(hAngle);
-        //            }
+        //    addChild(new Object(name + ".mid"));
+        //    lastChild().createCylinder();
+        //    lastChild().scaleZ(0.5f);
+        //    lastChild().rotateX(90.0f);
+        //    lastChild().centerOrigin();
 
-        //            float z = vAngle - length / 2;
+        //    addChild(new Object(name + ".bot"));
+        //    lastChild().createBall(0.5f);
+        //    lastChild().rotateZ(0);
+        //    lastChild().translateY(-0.5f);
+        //    lastChild().centerOrigin();
 
-        //            //patch rotation dibawah
-        //            vertices.Add(new Vector3(x, -z, y));
-        //            normals.Add(new Vector3(x, -z, y));
-
-        //            //vertices.Add(new Vector3(x, y, z));
-        //            //normals.Add(new Vector3(x, y, z));
-        //        }
-        //    }
-
-        //    vertices.Add(new Vector3(0, length / 2, 0));
-        //    normals.Add(new Vector3(0, 1, 0));
-
-        //    vertices.Add(new Vector3(0, -length / 2, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-
-        //    //vertices.Add(new Vector3(0, 0, -length / 2));
-        //    //normals.Add(new Vector3(0, 0, -length / 2));
-
-        //    //vertices.Add(new Vector3(0, 0, length / 2));
-        //    //normals.Add(new Vector3(0, 0, length / 2));
-
-        //    uint k1, k2;
-        //    for (int i = 0; i < vCount; i++)
-        //    {
-        //        k1 = (uint)i * ((uint)(hCount / divide) + 1);
-        //        k2 = (uint)k1 + (uint)(hCount / divide) + 1;
-
-        //        for (int j = 0; j < hCount / divide; j++, k1++, k2++)
-        //        {
-        //            vertexIndices.Add(k1);
-        //            vertexIndices.Add(k2);
-        //            vertexIndices.Add(k1 + 1);
-
-        //            vertexIndices.Add(k1 + 1);
-        //            vertexIndices.Add(k2);
-        //            vertexIndices.Add(k2 + 1);
-
-        //            if (i == 0)
-        //            {
-        //                vertexIndices.Add(k1);
-        //                vertexIndices.Add((uint)vertices.Count - 2);
-        //                vertexIndices.Add(k1 + 1);
-
-        //            }
-
-        //            vertexIndices.Add(k2);
-        //            vertexIndices.Add((uint)vertices.Count - 1);
-        //            vertexIndices.Add(k2 + 1);
-        //        }
-        //    }
-
-        //    init();
-        //    //rotateX(90f);
+        //    rotateX(90f);
         //    centerOrigin();
         //}
 
-        //public void createCone(float percent = 1)
-        //{
-        //    createCylinder(percent, 0);
-        //}
-
-        ////public void createCapsule(float length = 1, float percent = 1)
-        ////{
-
-        ////    delete();
-
-        ////    addChild(new Object(name + ".top"));
-        ////    lastChild().createBall(0.5f);
-        ////    lastChild().rotateZ(180.0f);
-        ////    lastChild().translateY(0.5f);
-        ////    lastChild().centerOrigin();
-
-        ////    addChild(new Object(name + ".mid"));
-        ////    lastChild().createCylinder();
-        ////    lastChild().scaleZ(0.5f);
-        ////    lastChild().rotateX(90.0f);
-        ////    lastChild().centerOrigin();
-
-        ////    addChild(new Object(name + ".bot"));
-        ////    lastChild().createBall(0.5f);
-        ////    lastChild().rotateZ(0);
-        ////    lastChild().translateY(-0.5f);
-        ////    lastChild().centerOrigin();
-
-        ////    rotateX(90f);
-        ////    centerOrigin();
-        ////}
-
-        //public void createTorus(float percent = 1, float tubedia = 1f)
-        //{
-        //    delete();
-        //    float torusdia = 1f;
-        //    tubedia = 0.25f * tubedia;
-        //    int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
-        //    int hCount = sharpness;
-        //    int vCount = sharpness;
-        //    float divide = 1 / percent;
-        //    float PI = (float)Math.PI;
-        //    float hStep = 2 * PI / hCount;
-        //    float vStep = 2 * PI / vCount;
-        //    float hAngle, vAngle;
-
-        //    for (int i = 0; i <= vCount; i++)
-        //    {
-        //        vAngle = i * vStep;
-
-        //        for (int j = 0; j <= hCount / divide; j++)
-        //        {
-        //            hAngle = j * hStep;
-        //            float x = 0;
-        //            float y = 0;
-
-        //            x = (torusdia / 2 + tubedia / 2 * (float)Math.Cos(vAngle)) * (float)Math.Cos(hAngle);
-        //            y = (torusdia / 2 + tubedia / 2 * (float)Math.Cos(vAngle)) * (float)Math.Sin(hAngle);
-
-        //            float z = tubedia / 2 * (float)Math.Sin(vAngle);
-
-        //            //patch rotation dibawah
-        //            vertices.Add(new Vector3(x, -z, y));
-        //            normals.Add(new Vector3(x, -z, y));
-
-        //            //vertices.Add(new Vector3(x, y, z));
-        //            //normals.Add(new Vector3(x, y, z));
-        //        }
-        //    }
-
-        //    uint k1, k2;
-        //    for (int i = 0; i < vCount; i++)
-        //    {
-        //        k1 = (uint)i * ((uint)(hCount / divide) + 1);
-        //        k2 = (uint)k1 + (uint)(hCount / divide) + 1;
-        //        for (int j = 0; j < hCount / divide; j++, k1++, k2++)
-        //        {
-        //            vertexIndices.Add(k1);
-        //            vertexIndices.Add(k2);
-        //            vertexIndices.Add(k1 + 1);
-
-        //            vertexIndices.Add(k1 + 1);
-        //            vertexIndices.Add(k2);
-        //            vertexIndices.Add(k2 + 1);
-        //        }
-        //    }
-
-        //    init();
-        //    //rotateX(90f);
-        //    centerOrigin();
-        //}
-
-        //public void createPlane()
-        //{
-
-        //    delete();
-
-        //    //dua sisi biar normalsnya bagus
-
-        //    vertices.Add(new Vector3(0.5f,-0.005f, 0.5f));
-        //    vertices.Add(new Vector3(0.5f, -0.005f, -0.5f));
-        //    vertices.Add(new Vector3(-0.5f, -0.005f, 0.5f));
-        //    vertices.Add(new Vector3(-0.5f, -0.005f, -0.5f));
-
-        //    vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
-        //    vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
-        //    vertices.Add(new Vector3(-0.5f, 0.005f, 0.5f));
-        //    vertices.Add(new Vector3(-0.5f, 0.005f, -0.5f));
-
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, 1, 0));
-        //    normals.Add(new Vector3(0, 1, 0)); 
-        //    normals.Add(new Vector3(0, 1, 0));
-        //    normals.Add(new Vector3(0, 1, 0));
-
-        //    vertexIndices = new List<uint>(new uint[] {
-        //        0, 1, 3,
-        //        0, 3, 2,
-        //        4, 5, 7,
-        //        4, 7, 6
-        //    });
-        //    init();
-        //}
-
-        //public void createTriangle(bool right = false)
-        //{
-
-        //    //dua sisi biar normalsnya bagus
-
-        //    delete();
-        //    if (!right)
-        //    {
-        //        vertices.Add(new Vector3(0.5f,-0.005f, -0.5f));
-        //        vertices.Add(new Vector3(0.5f, -0.005f, 0.5f));
-        //        vertices.Add(new Vector3(-0.5f, -0.005f, 0));
-
-        //        vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
-        //        vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
-        //        vertices.Add(new Vector3(-0.5f, 0.005f, 0));
-        //    }
-        //    else
-        //    {
-        //        vertices.Add(new Vector3(0.5f, -0.005f, -0.5f));
-        //        vertices.Add(new Vector3(0.5f, -0.005f, 0.5f));
-        //        vertices.Add(new Vector3(-0.5f, -0.005f, 0.5f));
-
-        //        vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
-        //        vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
-        //        vertices.Add(new Vector3(-0.5f, 0.005f, 0.5f));
-        //    }
-
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-
-        //    normals.Add(new Vector3(0, 1, 0));
-        //    normals.Add(new Vector3(0, 1, 0));
-        //    normals.Add(new Vector3(0, 1, 0));
-
-
-        //    vertexIndices = new List<uint>(new uint[] {
-        //       0,1,2,
-        //       3,4,5
-        //    });
-
-        //    init();
-        //}
-
-        //public void createCircle(float percent = 1)
-        //{
-
-        //    //dua sisi biar normalsnya bagus
-
-        //    delete();
-        //    int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
-        //    int hCount = sharpness;
-        //    float divide = 1 / percent;
-        //    float PI = (float)Math.PI;
-        //    float hStep = 2 * PI / hCount;
-        //    float hAngle;
-
-
-        //    for (int j = 0; j <= hCount / divide; j++)
-        //    {
-        //        hAngle = j * hStep;
-        //        float x = 0;
-        //        float y = 0;
-
-        //        x = (float)0.5 * (float)Math.Cos(hAngle);
-        //        y = (float)0.5 * (float)Math.Sin(hAngle);
-
-        //        float z = -0.005f;
-
-        //        //patch rotation dibawah
-        //        vertices.Add(new Vector3(x, -z, y));
-        //        normals.Add(new Vector3(0,-1,0));
-        //        //vertices.Add(new Vector3(x, y, z));
-        //        //normals.Add(new Vector3(x, y, z));
-        //    }
-
-        //    vertices.Add(new Vector3(0, 0, 0));
-        //    normals.Add(new Vector3(0, -1, 0));
-
-        //    for (int j = 0; j <= hCount / divide; j++)
-        //    {
-        //        hAngle = j * hStep;
-        //        float x = 0;
-        //        float y = 0;
-
-        //        x = (float)0.5 * (float)Math.Cos(hAngle);
-        //        y = (float)0.5 * (float)Math.Sin(hAngle);
-
-        //        float z = 0.005f;
-
-        //        //patch rotation dibawah
-        //        vertices.Add(new Vector3(x, -z, y));
-        //        normals.Add(new Vector3(0, 1, 0));
-        //        //vertices.Add(new Vector3(x, y, z));
-        //        //normals.Add(new Vector3(x, y, z));
-        //    }
-
-        //    vertices.Add(new Vector3(0, 0, 0));
-        //    normals.Add(new Vector3(0,1,0));
-
-        //    uint k1 = 0, k2 = 1;
-        //    for (int j = 0; j < hCount / divide; j++, k1++, k2++)
-        //    {
-        //        vertexIndices.Add(k1);
-        //        vertexIndices.Add((uint)(vertices.Count/2.0f - 1));
-        //        vertexIndices.Add(k2);
-        //    }
-
-        //    k1 = (uint)(vertices.Count / 2.0f);
-        //    k2 = (uint)(vertices.Count / 2.0f);
-        //    for (int j = 0; j < hCount / divide; j++, k1++, k2++)
-        //    {
-        //        vertexIndices.Add(k1);
-        //        vertexIndices.Add((uint)(vertices.Count - 1));
-        //        vertexIndices.Add(k2);
-        //    }
-
-        //    init();
-        //    //rotateX(90f);
-        //    centerOrigin();
-        //}
-
-        //public void createTerrain(float normyness = 0.1f, float detail = 3, int seed = 0)
-        //{
-
-        //    if (detail >= 3)
-        //    {
-        //        delete();
-        //        List<List<Vector3>> planePoints = new List<List<Vector3>>();
-
-        //        Random rand = new Random();
-        //        if (seed != 0)
-        //            rand = new Random(seed);
-
-        //        float curvedetail = Window.ROUND_OBJECT_DETAIL_LEVEL;
-        //        float xdet = detail;
-        //        float ydet = detail;
-        //        float xstep = 1 / (xdet - 1);
-        //        float ystep = 1 / (ydet - 1);
-        //        float xdif, ydif;
-
-        //        for (int i = 0; i < ydet; i++)
-        //        {
-        //            ydif = i * ystep - 0.5f;
-        //            List<Vector3> xPlanePoints = new List<Vector3>();
-        //            for (int j = 0; j < xdet; j++)
-        //            {
-        //                xdif = j * xstep - 0.5f;
-        //                float x = xdif;
-        //                float y = ydif;
-
-        //                float z = (float)(rand.NextDouble() - 0.5) * normyness / 2;
-        //                xPlanePoints.Add(new Vector3(x, y, z));
-        //            }
-        //            planePoints.Add(xPlanePoints);
-        //        }
-
-        //        // curving y axis
-        //        List<List<Vector3>> curvedXPoints = new List<List<Vector3>>();
-        //        foreach (var xPoints in planePoints)
-        //        {
-        //            curvedXPoints.Add(generateBezier(xPoints, 1, curvedetail));
-        //        }
-
-        //        // curving x axis and store to temp
-        //        List<List<Vector3>> allCurved = new List<List<Vector3>>();
-        //        for (int i = 0; i < curvedXPoints[0].Count; i++)
-        //        {
-        //            List<Vector3> yPlanePoints = new List<Vector3>();
-        //            for (int j = 0; j < curvedXPoints.Count; j++)
-        //            {
-        //                yPlanePoints.Add(curvedXPoints[j][i]);
-        //            }
-        //            allCurved.Add(generateBezier(yPlanePoints, 0, curvedetail));
-        //        }
-
-        //        for (int i = 0; i < allCurved[0].Count; i++)
-        //        {
-        //            for (int j = 0; j < allCurved.Count; j++)
-        //            {
-        //                //vertices.Add(allCurved[j][i]);
-        //                //normals.Add(allCurved[j][i]);
-        //                //patch rotation dibawah
-        //                vertices.Add(new Vector3(allCurved[j][i].X, -allCurved[j][i].Z, allCurved[j][i].Y));
-        //                normals.Add(new Vector3(0,1,0));
-        //                //normals.Add(new Vector3(allCurved[j][i].X, -allCurved[j][i].Z, allCurved[j][i].Y));
-        //            }
-        //        }
-
-        //        uint k1, k2;
-        //        for (int i = 0; i < allCurved[0].Count; i++)
-        //        {
-        //            k1 = (uint)i * ((uint)(allCurved.Count));
-        //            k2 = (uint)k1 + (uint)(allCurved.Count);
-
-        //            for (int j = 0; j < allCurved.Count; j++, k1++, k2++)
-        //            {
-        //                if (i < allCurved[0].Count - 1 && j < allCurved.Count - 1)
-        //                {
-        //                    vertexIndices.Add(k2 + 1);
-        //                    vertexIndices.Add(k1 + 1);
-        //                    vertexIndices.Add(k1);
-
-        //                    vertexIndices.Add(k1);
-        //                    vertexIndices.Add(k2);
-        //                    vertexIndices.Add(k2 + 1);
-        //                }
-
-        //            }
-        //        }
-
-        //        init();
-        //        //rotateX(90f);
-        //        centerOrigin();
-        //    }
-        //}
-
-        //public void createFreeformTube(List<Vector2> path, float percent = 1, float tubedia = 0.2f)
-        //{
-        //    delete();
-        //    int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL * 10;
-        //    int hCount = sharpness;
-        //    float divide = 1 / percent;
-        //    float PI = (float)Math.PI;
-        //    float hStep = 2 * PI / hCount;
-        //    float hAngle, firstAngle = 0, lastAngle = 0;
-        //    Quaternion rotfix = new Quaternion(0.7071068f, 0.7071068f, 0, 0);
-
-        //    //smoothify path 
-        //    path = generateBezier(path, sharpness);
-        //    int vCount = path.Count;
-
-        //    for (int i = 0; i < vCount; i++)
-        //    {
-        //        for (int j = 0; j <= hCount / divide; j++)
-        //        {
-        //            hAngle = j * hStep;
-        //            float x = 0;
-        //            float y = 0;
-
-        //            x = 0 + tubedia / 2 * (float)Math.Cos(hAngle);
-        //            y = path[i].X + tubedia / 2 * (float)Math.Sin(hAngle);
-
-        //            float z = path[i].Y;
-        //            if (i == 0)
-        //            {
-        //                firstAngle = (float)Math.Atan2((path[i + 1].X - path[i].X), (path[i + 1].Y - path[i].Y));
-        //            }
-        //            if (i != vCount - 1)
-        //            {
-        //                lastAngle = (float)Math.Atan2((path[i + 1].X - path[i].X), (path[i + 1].Y - path[i].Y));
-        //            }
-        //            Vector3 temp = new Vector3(x, y, z);
-        //            //x always 0, no correction needed
-        //            Vector3 clone = new Vector3(temp);
-        //            temp = temp + new Vector3(0, -path[i].X, -clone.Z);
-        //            temp = new Vector3(new Vector4(temp, 1f) * Matrix4.CreateRotationX(-lastAngle));
-        //            temp = temp + new Vector3(0, path[i].X, clone.Z);
-        //            //patch rotation dibawah
-        //            temp *= Matrix3.CreateFromQuaternion(rotfix);
-
-        //            vertices.Add(temp);
-        //            normals.Add(temp);
-        //            //vertices.Add(new Vector3(temp.Z, -temp.Y, temp.X));
-        //            //normals.Add(new Vector3(temp.Z, -temp.Y, temp.X));
-        //        }
-        //    }
-
-        //    vertices.Add(new Vector3(0, path[0].X, path[0].Y) * Matrix3.CreateFromQuaternion(rotfix));
-        //    normals.Add(new Vector3(0, path[0].X, path[0].Y) * Matrix3.CreateFromQuaternion(rotfix));
-
-        //    vertices.Add(new Vector3(0, path.Last().X, path.Last().Y) * Matrix3.CreateFromQuaternion(rotfix));
-        //    normals.Add(new Vector3(0, path.Last().X, path.Last().Y) * Matrix3.CreateFromQuaternion(rotfix));
-
-        //    //vertices.Add(new Vector3(path[0].Y, -path[0].X, 0));
-        //    //normals.Add(new Vector3(path[0].Y, -path[0].X, 0));
-
-        //    //vertices.Add(new Vector3(path.Last().Y, -path.Last().X, 0));
-        //    //normals.Add(new Vector3(path.Last().Y, -path.Last().X, 0));
-
-        //    uint k1, k2;
-        //    for (int i = 0; i < vCount; i++)
-        //    {
-        //        k1 = (uint)i * ((uint)(hCount / divide) + 1);
-        //        k2 = (uint)k1 + (uint)(hCount / divide) + 1;
-
-        //        for (int j = 0; j < hCount / divide; j++, k1++, k2++)
-        //        {
-        //            if (i != vCount - 1)
-        //            {
-        //                vertexIndices.Add(k1);
-        //                vertexIndices.Add(k2);
-        //                vertexIndices.Add(k1 + 1);
-
-        //                vertexIndices.Add(k1 + 1);
-        //                vertexIndices.Add(k2);
-        //                vertexIndices.Add(k2 + 1);
-        //            }
-        //            if (i == 0)
-        //            {
-        //                vertexIndices.Add(k1);
-        //                vertexIndices.Add((uint)vertices.Count - 2);
-        //                vertexIndices.Add(k1 + 1);
-
-        //            }
-        //            else if (i == vCount - 1)
-        //            {
-        //                vertexIndices.Add(k1);
-        //                vertexIndices.Add((uint)vertices.Count - 1);
-        //                vertexIndices.Add(k1 + 1);
-        //            }
-        //        }
-        //    }
-
-        //    //rotateX(180);
-        //    //rotateY(90);
-        //    init();
-        //    centerOrigin();
-        //}
+        public void createTorus(float percent = 1, float tubedia = 1f)
+        {
+            delete();
+            float torusdia = 1f;
+            tubedia = 0.25f * tubedia;
+            int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
+            int hCount = sharpness;
+            int vCount = sharpness;
+            float divide = 1 / percent;
+            float PI = (float)Math.PI;
+            float hStep = 2 * PI / hCount;
+            float vStep = 2 * PI / vCount;
+            float hAngle, vAngle;
+
+            for (int i = 0; i <= vCount; i++)
+            {
+                vAngle = i * vStep;
+
+                for (int j = 0; j <= hCount / divide; j++)
+                {
+                    hAngle = j * hStep;
+                    float x = 0;
+                    float y = 0;
+
+                    x = (torusdia / 2 + tubedia / 2 * (float)Math.Cos(vAngle)) * (float)Math.Cos(hAngle);
+                    y = (torusdia / 2 + tubedia / 2 * (float)Math.Cos(vAngle)) * (float)Math.Sin(hAngle);
+
+                    float z = tubedia / 2 * (float)Math.Sin(vAngle);
+
+                    //patch rotation dibawah
+                    vertices.Add(new Vector3(x, -z, y));
+                    normals.Add(new Vector3(x, -z, y));
+
+                    //vertices.Add(new Vector3(x, y, z));
+                    //normals.Add(new Vector3(x, y, z));
+                }
+            }
+
+            uint k1, k2;
+            for (int i = 0; i < vCount; i++)
+            {
+                k1 = (uint)i * ((uint)(hCount / divide) + 1);
+                k2 = (uint)k1 + (uint)(hCount / divide) + 1;
+                for (int j = 0; j < hCount / divide; j++, k1++, k2++)
+                {
+                    vertexIndices.Add(k1);
+                    vertexIndices.Add(k2);
+                    vertexIndices.Add(k1 + 1);
+
+                    vertexIndices.Add(k1 + 1);
+                    vertexIndices.Add(k2);
+                    vertexIndices.Add(k2 + 1);
+                }
+            }
+
+            init();
+            //rotateX(90f);
+            centerOrigin();
+        }
+
+        public void createPlane()
+        {
+
+            delete();
+
+            //dua sisi biar normalsnya bagus
+
+            vertices.Add(new Vector3(0.5f, -0.005f, 0.5f));
+            vertices.Add(new Vector3(0.5f, -0.005f, -0.5f));
+            vertices.Add(new Vector3(-0.5f, -0.005f, 0.5f));
+            vertices.Add(new Vector3(-0.5f, -0.005f, -0.5f));
+
+            vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
+            vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
+            vertices.Add(new Vector3(-0.5f, 0.005f, 0.5f));
+            vertices.Add(new Vector3(-0.5f, 0.005f, -0.5f));
+
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+
+            vertexIndices = new List<uint>(new uint[] {
+                0, 1, 3,
+                0, 3, 2,
+                4, 5, 7,
+                4, 7, 6
+            });
+            init();
+        }
+
+        public void createTriangle(bool right = false)
+        {
+
+            //dua sisi biar normalsnya bagus
+
+            delete();
+            if (!right)
+            {
+                vertices.Add(new Vector3(0.5f, -0.005f, -0.5f));
+                vertices.Add(new Vector3(0.5f, -0.005f, 0.5f));
+                vertices.Add(new Vector3(-0.5f, -0.005f, 0));
+
+                vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
+                vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
+                vertices.Add(new Vector3(-0.5f, 0.005f, 0));
+            }
+            else
+            {
+                vertices.Add(new Vector3(0.5f, -0.005f, -0.5f));
+                vertices.Add(new Vector3(0.5f, -0.005f, 0.5f));
+                vertices.Add(new Vector3(-0.5f, -0.005f, 0.5f));
+
+                vertices.Add(new Vector3(0.5f, 0.005f, -0.5f));
+                vertices.Add(new Vector3(0.5f, 0.005f, 0.5f));
+                vertices.Add(new Vector3(-0.5f, 0.005f, 0.5f));
+            }
+
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, -1, 0));
+            normals.Add(new Vector3(0, -1, 0));
+
+            normals.Add(new Vector3(0, 1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+            normals.Add(new Vector3(0, 1, 0));
+
+
+            vertexIndices = new List<uint>(new uint[] {
+               0,1,2,
+               3,4,5
+            });
+
+            init();
+        }
+
+        public void createCircle(float percent = 1)
+        {
+
+            //dua sisi biar normalsnya bagus
+
+            delete();
+            int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL;
+            int hCount = sharpness;
+            float divide = 1 / percent;
+            float PI = (float)Math.PI;
+            float hStep = 2 * PI / hCount;
+            float hAngle;
+
+
+            for (int j = 0; j <= hCount / divide; j++)
+            {
+                hAngle = j * hStep;
+                float x = 0;
+                float y = 0;
+
+                x = (float)0.5 * (float)Math.Cos(hAngle);
+                y = (float)0.5 * (float)Math.Sin(hAngle);
+
+                float z = -0.005f;
+
+                //patch rotation dibawah
+                vertices.Add(new Vector3(x, -z, y));
+                normals.Add(new Vector3(0, -1, 0));
+                //vertices.Add(new Vector3(x, y, z));
+                //normals.Add(new Vector3(x, y, z));
+            }
+
+            vertices.Add(new Vector3(0, 0, 0));
+            normals.Add(new Vector3(0, -1, 0));
+
+            for (int j = 0; j <= hCount / divide; j++)
+            {
+                hAngle = j * hStep;
+                float x = 0;
+                float y = 0;
+
+                x = (float)0.5 * (float)Math.Cos(hAngle);
+                y = (float)0.5 * (float)Math.Sin(hAngle);
+
+                float z = 0.005f;
+
+                //patch rotation dibawah
+                vertices.Add(new Vector3(x, -z, y));
+                normals.Add(new Vector3(0, 1, 0));
+                //vertices.Add(new Vector3(x, y, z));
+                //normals.Add(new Vector3(x, y, z));
+            }
+
+            vertices.Add(new Vector3(0, 0, 0));
+            normals.Add(new Vector3(0, 1, 0));
+
+            uint k1 = 0, k2 = 1;
+            for (int j = 0; j < hCount / divide; j++, k1++, k2++)
+            {
+                vertexIndices.Add(k1);
+                vertexIndices.Add((uint)(vertices.Count / 2.0f - 1));
+                vertexIndices.Add(k2);
+            }
+
+            k1 = (uint)(vertices.Count / 2.0f);
+            k2 = (uint)(vertices.Count / 2.0f);
+            for (int j = 0; j < hCount / divide; j++, k1++, k2++)
+            {
+                vertexIndices.Add(k1);
+                vertexIndices.Add((uint)(vertices.Count - 1));
+                vertexIndices.Add(k2);
+            }
+
+            init();
+            //rotateX(90f);
+            centerOrigin();
+        }
+
+        public void createTerrain(float normyness = 0.1f, float detail = 3, int seed = 0)
+        {
+
+            if (detail >= 3)
+            {
+                delete();
+                List<List<Vector3>> planePoints = new List<List<Vector3>>();
+
+                Random rand = new Random();
+                if (seed != 0)
+                    rand = new Random(seed);
+
+                float curvedetail = Window.ROUND_OBJECT_DETAIL_LEVEL;
+                float xdet = detail;
+                float ydet = detail;
+                float xstep = 1 / (xdet - 1);
+                float ystep = 1 / (ydet - 1);
+                float xdif, ydif;
+
+                for (int i = 0; i < ydet; i++)
+                {
+                    ydif = i * ystep - 0.5f;
+                    List<Vector3> xPlanePoints = new List<Vector3>();
+                    for (int j = 0; j < xdet; j++)
+                    {
+                        xdif = j * xstep - 0.5f;
+                        float x = xdif;
+                        float y = ydif;
+
+                        float z = (float)(rand.NextDouble() - 0.5) * normyness / 2;
+                        xPlanePoints.Add(new Vector3(x, y, z));
+                    }
+                    planePoints.Add(xPlanePoints);
+                }
+
+                // curving y axis
+                List<List<Vector3>> curvedXPoints = new List<List<Vector3>>();
+                foreach (var xPoints in planePoints)
+                {
+                    curvedXPoints.Add(generateBezier(xPoints, 1, curvedetail));
+                }
+
+                // curving x axis and store to temp
+                List<List<Vector3>> allCurved = new List<List<Vector3>>();
+                for (int i = 0; i < curvedXPoints[0].Count; i++)
+                {
+                    List<Vector3> yPlanePoints = new List<Vector3>();
+                    for (int j = 0; j < curvedXPoints.Count; j++)
+                    {
+                        yPlanePoints.Add(curvedXPoints[j][i]);
+                    }
+                    allCurved.Add(generateBezier(yPlanePoints, 0, curvedetail));
+                }
+
+                for (int i = 0; i < allCurved[0].Count; i++)
+                {
+                    for (int j = 0; j < allCurved.Count; j++)
+                    {
+                        //vertices.Add(allCurved[j][i]);
+                        //normals.Add(allCurved[j][i]);
+                        //patch rotation dibawah
+                        vertices.Add(new Vector3(allCurved[j][i].X, -allCurved[j][i].Z, allCurved[j][i].Y));
+                        normals.Add(new Vector3(0, 1, 0));
+                        //normals.Add(new Vector3(allCurved[j][i].X, -allCurved[j][i].Z, allCurved[j][i].Y));
+                    }
+                }
+
+                uint k1, k2;
+                for (int i = 0; i < allCurved[0].Count; i++)
+                {
+                    k1 = (uint)i * ((uint)(allCurved.Count));
+                    k2 = (uint)k1 + (uint)(allCurved.Count);
+
+                    for (int j = 0; j < allCurved.Count; j++, k1++, k2++)
+                    {
+                        if (i < allCurved[0].Count - 1 && j < allCurved.Count - 1)
+                        {
+                            vertexIndices.Add(k2 + 1);
+                            vertexIndices.Add(k1 + 1);
+                            vertexIndices.Add(k1);
+
+                            vertexIndices.Add(k1);
+                            vertexIndices.Add(k2);
+                            vertexIndices.Add(k2 + 1);
+                        }
+
+                    }
+                }
+
+                init();
+                //rotateX(90f);
+                centerOrigin();
+            }
+        }
+
+        public void createFreeformTube(List<Vector2> path, float percent = 1, float tubedia = 0.2f)
+        {
+            delete();
+            int sharpness = Window.ROUND_OBJECT_DETAIL_LEVEL * 10;
+            int hCount = sharpness;
+            float divide = 1 / percent;
+            float PI = (float)Math.PI;
+            float hStep = 2 * PI / hCount;
+            float hAngle, firstAngle = 0, lastAngle = 0;
+            Quaternion rotfix = new Quaternion(0.7071068f, 0.7071068f, 0, 0);
+
+            //smoothify path 
+            path = generateBezier(path, sharpness);
+            int vCount = path.Count;
+
+            for (int i = 0; i < vCount; i++)
+            {
+                for (int j = 0; j <= hCount / divide; j++)
+                {
+                    hAngle = j * hStep;
+                    float x = 0;
+                    float y = 0;
+
+                    x = 0 + tubedia / 2 * (float)Math.Cos(hAngle);
+                    y = path[i].X + tubedia / 2 * (float)Math.Sin(hAngle);
+
+                    float z = path[i].Y;
+                    if (i == 0)
+                    {
+                        firstAngle = (float)Math.Atan2((path[i + 1].X - path[i].X), (path[i + 1].Y - path[i].Y));
+                    }
+                    if (i != vCount - 1)
+                    {
+                        lastAngle = (float)Math.Atan2((path[i + 1].X - path[i].X), (path[i + 1].Y - path[i].Y));
+                    }
+                    Vector3 temp = new Vector3(x, y, z);
+                    //x always 0, no correction needed
+                    Vector3 clone = new Vector3(temp);
+                    temp = temp + new Vector3(0, -path[i].X, -clone.Z);
+                    temp = new Vector3(new Vector4(temp, 1f) * Matrix4.CreateRotationX(-lastAngle));
+                    temp = temp + new Vector3(0, path[i].X, clone.Z);
+                    //patch rotation dibawah
+                    temp *= Matrix3.CreateFromQuaternion(rotfix);
+
+                    vertices.Add(temp);
+                    normals.Add(temp);
+                    //vertices.Add(new Vector3(temp.Z, -temp.Y, temp.X));
+                    //normals.Add(new Vector3(temp.Z, -temp.Y, temp.X));
+                }
+            }
+
+            vertices.Add(new Vector3(0, path[0].X, path[0].Y) * Matrix3.CreateFromQuaternion(rotfix));
+            normals.Add(new Vector3(0, path[0].X, path[0].Y) * Matrix3.CreateFromQuaternion(rotfix));
+
+            vertices.Add(new Vector3(0, path.Last().X, path.Last().Y) * Matrix3.CreateFromQuaternion(rotfix));
+            normals.Add(new Vector3(0, path.Last().X, path.Last().Y) * Matrix3.CreateFromQuaternion(rotfix));
+
+            //vertices.Add(new Vector3(path[0].Y, -path[0].X, 0));
+            //normals.Add(new Vector3(path[0].Y, -path[0].X, 0));
+
+            //vertices.Add(new Vector3(path.Last().Y, -path.Last().X, 0));
+            //normals.Add(new Vector3(path.Last().Y, -path.Last().X, 0));
+
+            uint k1, k2;
+            for (int i = 0; i < vCount; i++)
+            {
+                k1 = (uint)i * ((uint)(hCount / divide) + 1);
+                k2 = (uint)k1 + (uint)(hCount / divide) + 1;
+
+                for (int j = 0; j < hCount / divide; j++, k1++, k2++)
+                {
+                    if (i != vCount - 1)
+                    {
+                        vertexIndices.Add(k1);
+                        vertexIndices.Add(k2);
+                        vertexIndices.Add(k1 + 1);
+
+                        vertexIndices.Add(k1 + 1);
+                        vertexIndices.Add(k2);
+                        vertexIndices.Add(k2 + 1);
+                    }
+                    if (i == 0)
+                    {
+                        vertexIndices.Add(k1);
+                        vertexIndices.Add((uint)vertices.Count - 2);
+                        vertexIndices.Add(k1 + 1);
+
+                    }
+                    else if (i == vCount - 1)
+                    {
+                        vertexIndices.Add(k1);
+                        vertexIndices.Add((uint)vertices.Count - 1);
+                        vertexIndices.Add(k1 + 1);
+                    }
+                }
+            }
+
+            //rotateX(180);
+            //rotateY(90);
+            init();
+            centerOrigin();
+        }
 
         // misc tool functions
 
@@ -1535,7 +1681,7 @@ namespace UAS
             texcoords = new List<Vector2>(new Vector2[vertices.Count()]);
             for (int i = 0; i < vertices.Count(); i++)
             {
-                texcoords[i] = new Vector2(0, 1);
+                texcoords[i] = new Vector2(0, 0);
             }
         }
 

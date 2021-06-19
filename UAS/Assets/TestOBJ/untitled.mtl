@@ -1,0 +1,15 @@
+# Blender MTL File: 'None'
+# Material Count: 1
+
+newmtl Material.001
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump D:\\Desktop\\kuliah mbut\\Sem 4\\Grafika Komputer\\UTS\\UTS-Grafika-Komputer\\UTS\\bin\\Release\\netcoreapp3.1\\cobble\\cbl_NORM.jpg
+map_Kd D:\\Desktop\\kuliah mbut\\Sem 4\\Grafika Komputer\\UTS\\UTS-Grafika-Komputer\\UTS\\bin\\Release\\netcoreapp3.1\\cobble\\cbl_DIFF.jpg
+map_Ks D:\\Desktop\\kuliah mbut\\Sem 4\\Grafika Komputer\\UTS\\UTS-Grafika-Komputer\\UTS\\bin\\Release\\netcoreapp3.1\\cobble\\cbl_SPEC.jpg

@@ -21,6 +21,7 @@ namespace UAS
         public float specularExponent;
         public float alpha;
         public float dispHeight;
+        public float ambiance;
 
         public int diffHandle;
         public int specHandle;
@@ -59,6 +60,7 @@ namespace UAS
             specular.Z = 1;
             alpha = 1.0f;
             dispHeight = 0.1f;
+            ambiance = 0.1f;
             specularExponent = 8;
 
             white_default = new List<byte>(4 * 1 * 1);
@@ -83,7 +85,7 @@ namespace UAS
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             GL.BindTexture(TextureTarget.Texture2D, specHandle);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
@@ -144,7 +146,7 @@ namespace UAS
             {
                 specHandle = GL.GenTexture();
                 GL.BindTexture(TextureTarget.Texture2D, specHandle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
