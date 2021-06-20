@@ -58,7 +58,7 @@ uniform int globalshadow;
 // lights and material
 uniform Material material;
 uniform int lightCount;
-uniform Light lights[10];
+uniform Light lights[15];
 
 vec3 gridSamplingDisk[20] = vec3[]
 (
@@ -95,12 +95,13 @@ float ShadowCalculation(vec3 fragPos, Light light)
 // calculates the color when using a directional light.
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir)
 {
+
     vec3 lightDir = normalize(-light.direction);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // combine results
     vec3 ambient = light.ambient * material.ambient;
     vec3 diffuse = light.diffuse * diff * material.diffuse;
@@ -114,13 +115,13 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float attenuation = 1.0 / (distance * distance);    
     // combine results
     vec3 ambient = light.ambient * material.ambient;
     vec3 diffuse = light.diffuse * diff * material.diffuse;
@@ -137,15 +138,15 @@ vec3 CalcSpotLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float attenuation = 1.0 / (distance * distance);    
     // spotlight intensity
-    float theta = dot(normalize(-light.direction), lightDir); 
+    float theta = dot(lightDir,normalize(-light.direction)); 
     float epsilon = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
     // combine results

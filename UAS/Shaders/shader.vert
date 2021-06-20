@@ -7,10 +7,10 @@ layout (location = 4) in vec2 aTexCoord;
 
 out VS_OUT {
     vec3 FragPos;
+    vec3 Normal;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec2 TexCoord;
-    mat3 TBN;
 } vs_out;
 
 uniform mat4 model;
@@ -30,10 +30,12 @@ void main()
     vec3 B = aBitangent * trainvmodel;
     vec3 N = aNormal * trainvmodel;
 
-    vs_out.TBN = mat3(T,B,N);
+    vs_out.Normal = N;
 
-    vs_out.TangentViewPos  = viewPosB * vs_out.TBN;
-    vs_out.TangentFragPos  = vs_out.FragPos * vs_out.TBN;
+    mat3 TBN = mat3(T,B,N);
+
+    vs_out.TangentViewPos  = viewPosB * TBN;
+    vs_out.TangentFragPos  = vs_out.FragPos * TBN;
 
     gl_Position = vec4(aPosition, 1.0) * model * view * projection;
 }

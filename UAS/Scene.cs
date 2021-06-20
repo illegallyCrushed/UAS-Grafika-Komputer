@@ -34,8 +34,8 @@ namespace UAS
 
         public static Matrix4 ProjectionMatrix;
         public static Matrix4 ViewMatrix;
-        public static Vector3 ViewPosition = new Vector3(20, 5, 0);
-        public static Vector3 ViewTo = new Vector3(-1, 0, 0);
+        public static Vector3 ViewPosition = new Vector3(0, 175, 0);
+        public static Vector3 ViewTo = new Vector3(0, 0, -1);
         public static Vector3 ViewUpwards = new Vector3(0, 1, 0);
         public static float Pitch = 0;
         public static float Yaw = 180;
@@ -48,13 +48,13 @@ namespace UAS
         public static float RotateVelocityY = 0;
         public static float RotateVelocityZ = 0;
 
-        public static bool ShowLightBall = true;
+        public static bool ShowLightBall = false;
         public static bool Wireframe = false;
         public static bool Solids = true;
 
         public static bool GlobalLighting = true;
         public static bool GlobalShadow = true;
-        public static int MaxLight = 10;
+        public static int MaxLight = 15;
 
         private static int _skyBoxVBO;
         private static int _skyBoxVAO;
@@ -237,7 +237,11 @@ namespace UAS
             {
                 foreach (var light in Scene.Lights)
                 {
-                    light.calculateShadow(ref scene);
+                    if (light.castShadow == 1)
+                    {
+                        //Console.WriteLine(light.name);
+                        light.calculateShadow(ref scene);
+                    }
                 }
             }
 
@@ -248,7 +252,8 @@ namespace UAS
             {
                 foreach (var light in Scene.Lights)
                 {
-                    light.renderLightCube();
+                   
+                   light.renderLightCube();
                 }
             }
 
@@ -289,7 +294,7 @@ namespace UAS
         public static void Movement(FrameEventArgs e, Window w)
         {
 
-            float speed = 5f;
+            float speed = 100f;
 
             if (w.KeyboardState.IsKeyDown(Keys.W))
             {

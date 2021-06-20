@@ -26,7 +26,7 @@ namespace UAS
     {
         public static readonly int ROUND_OBJECT_DETAIL_LEVEL = 20;
         public static readonly int MULTISAMPLING_LEVEL = 4;
-        public static readonly int SHADOW_RESOLUTION = 2048;
+        public static readonly int SHADOW_RESOLUTION = 4096;
         public static bool ENABLE_SHADOW = true;
         public static bool ISFULLSCREEN = false;
         public static bool PLAYANIMATION = true;

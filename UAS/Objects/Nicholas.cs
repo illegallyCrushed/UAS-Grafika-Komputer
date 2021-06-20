@@ -49,10 +49,12 @@ namespace UAS
             //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/lightTest.glb", "light");
             //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/ROADLIGHT.glb", "light");
             //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/testAnima.glb", "light");
+            scene.LoadModel(ref scene, "../../../Assets/MAIN/AllCombined.glb", "light");
+            //scene.LoadModel(ref scene, "../../../Assets/MAIN/AllCombined/AllCombined.gltf", "light");
 
-            //Light.GenerateDirectional(ref Scene.Lights, "default", Matrix4.CreateScale(0), new Vector3(1), new Vector3(1), new Vector3(1), new Vector3(0, 1, 1));
+            //Light.GenerateDirectional(ref Scene.Lights, "default", Matrix4.CreateScale(0), new Vector3(100), new Vector3(100), new Vector3(100), new Vector3(0, 1, 1), new Vector3(0, 1, 1));
             //scene.LoadModel(ref scene, "../../../Assets/Monster/Monster.glb", "monster");
-            scene.LoadModel(ref scene, "../../../Assets/Monster/MonsterAnima.glb", "monster");
+            //scene.LoadModel(ref scene, "../../../Assets/Monster/MonsterAnima.glb", "monster");
 
 
 

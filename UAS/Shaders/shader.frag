@@ -46,10 +46,10 @@ struct Light {
 // processed input
 in VS_OUT {
     vec3 FragPos;
+    vec3 Normal;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec2 TexCoord;
-    mat3 TBN;
 } fs_in;
 
 // maps
@@ -69,7 +69,7 @@ uniform float height_scale;
 // lights and materials
 uniform Material material;
 uniform int lightCount;
-uniform Light lights[10];
+uniform Light lights[15];
 
 vec3 gridSamplingDisk[20] = vec3[]
 (
@@ -108,10 +108,10 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 Tex
 {
     vec3 lightDir = normalize(-light.direction);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // combine results
     vec3 ambient = light.ambient * material.ambient * texture(ambiMap, TexCoord).r * texture(diffMap, TexCoord).rgb;
     vec3 diffuse = light.diffuse * diff * material.diffuse * texture(diffMap, TexCoord).rgb;
@@ -122,40 +122,42 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 Tex
 // calculates the color when using a point light.
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 TexCoord)
 {
+
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float attenuation = 1.0 / (distance * distance);    
     // combine results
-    vec3 ambient = light.ambient * material.ambient * texture(ambiMap, TexCoord).r * texture(diffMap, TexCoord).rgb;
+   vec3 ambient = light.ambient * material.ambient * texture(ambiMap, TexCoord).r * texture(diffMap, TexCoord).rgb;
     vec3 diffuse = light.diffuse * diff * material.diffuse * texture(diffMap, TexCoord).rgb;
     vec3 specular = light.specular * spec * material.specular * texture(specMap, TexCoord).r;
     ambient *= attenuation;
     diffuse *= attenuation;
     specular *= attenuation;
-    
+   
     return (ambient + diffuse + specular);
 }
 
 // calculates the color when using a spot light.
 vec3 CalcSpotLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 TexCoord)
 {
+    
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
-    float diff = max(dot(lightDir, normal), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    float spec = pow(max(dot(halfwayDir, normal), 0.0), material.shininess);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     // attenuation
     float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float attenuation = 1.0 / (distance * distance);
     // spotlight intensity
-    float theta = dot(normalize(-light.direction), lightDir); 
+    float theta = dot(lightDir,normalize(-light.direction)); 
     float epsilon = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
     // combine results
@@ -165,7 +167,7 @@ vec3 CalcSpotLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 Te
     ambient *= attenuation * intensity;
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
-   
+    
     return (ambient + diffuse + specular);
 }
 
@@ -210,7 +212,6 @@ void main()
     vec2 TexCoord = ParallaxMapping(fs_in.TexCoord,  viewDir);
     vec3 normal = vec3(texture(normMap, TexCoord));
     normal = normalize(normal * 2.0 - 1.0);
-    normal = normalize(fs_in.TBN * normal);
 
     // start calculating lights
     vec3 result= vec3(0,0,0);

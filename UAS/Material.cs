@@ -62,9 +62,9 @@ namespace UAS
             diffuse.X = 1;
             diffuse.Y = 1;
             diffuse.Z = 1;
-            specular.X = 0;
-            specular.Y = 0;
-            specular.Z = 0;
+            specular.X = 1;
+            specular.Y = 1;
+            specular.Z = 1;
             emissive.X = 0;
             emissive.Y = 0;
             emissive.Z = 0;

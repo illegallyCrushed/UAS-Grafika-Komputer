@@ -41,10 +41,10 @@ struct Light {
 // processed input
 in VS_OUT {
     vec3 FragPos;
+    vec3 Normal;
     vec3 TangentViewPos;
     vec3 TangentFragPos;
     vec2 TexCoord;
-    mat3 TBN;
 } fs_in;
 
 
@@ -58,7 +58,7 @@ uniform float ambiance;
 
 // lights and materials
 uniform int lightCount;
-uniform Light lights[10];
+uniform Light lights[15];
 
 vec3 gridSamplingDisk[20] = vec3[]
 (
@@ -255,7 +255,6 @@ void main()
     vec2 TexCoords = ParallaxMapping(fs_in.TexCoord,  V);
     vec3 N = vec3(texture(normalMap, TexCoords));
     N = normalize(N * 2.0 - 1.0);
-    N = normalize(fs_in.TBN * N);
 
     vec3 emission = texture(emisMap, TexCoords).rgb;
     vec3 albedo     = pow(texture(albedoMap, TexCoords).rgb, vec3(2.2));

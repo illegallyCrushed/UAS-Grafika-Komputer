@@ -42,7 +42,7 @@ namespace UAS
         public Matrix4 origin_transform;
         public Matrix4 saved_transform;
 
-        public Object parent;
+        public Object parent = null;
 
         // Children
         public List<Object> children = new List<Object>();
@@ -176,13 +176,13 @@ namespace UAS
 
             foreach (var animation in newobj.Animations)
             {
-                Console.WriteLine("Animation Name : " + animation.Name);
-                Console.WriteLine("Animation TPS : " + animation.TicksPerSecond);
-                Console.WriteLine("Animation Duration : " + animation.DurationInTicks);
+                //Console.WriteLine("Animation Name : " + animation.Name);
+                //Console.WriteLine("Animation TPS : " + animation.TicksPerSecond);
+                //Console.WriteLine("Animation Duration : " + animation.DurationInTicks);
 
                 if (animation.DurationInTicks / animation.TicksPerSecond > maxTime) {
                     maxTime = (float)animation.DurationInTicks / (float)animation.TicksPerSecond;
-                    Console.WriteLine("Maxtime " + maxTime);
+                    //Console.WriteLine("Maxtime " + maxTime);
                 }
             }
 
@@ -190,35 +190,30 @@ namespace UAS
             {
                 foreach (var node in animation.NodeAnimationChannels)
                 {
-                    Console.WriteLine("\tNode Name : " + node.NodeName);
-                    Console.WriteLine("\tMax Time : " + maxTime * (float)animation.TicksPerSecond);
+                    //Console.WriteLine("\tNode Name : " + node.NodeName);
+                    //Console.WriteLine("\tMax Time : " + maxTime * (float)animation.TicksPerSecond);
                     Animator.Timeline.NewTimeline(node.NodeName, (float)animation.TicksPerSecond, maxTime*(float)animation.TicksPerSecond, node.ScalingKeys, node.RotationKeys, node.PositionKeys);
                 }
             }
 
-
-            Object model = new Object(groupname);
-
-            // process mesh nodes
-            processNodes(newobj.RootNode, newobj, model, parDir);
             if (newobj.HasLights)
             {
 
-                Console.WriteLine("**LIGHT DETECTED**");
+                //Console.WriteLine("**LIGHT DETECTED**");
                 foreach (var light in newobj.Lights)
                 {
                     Assimp.Node parentNode = newobj.RootNode.FindNode(light.Name).Parent;
                     Assimp.Matrix4x4 ps = parentNode.Transform;
-                    Console.WriteLine(String.Format("Name: {0}", parentNode.Name));
+                    //Console.WriteLine(String.Format("Name: {0}", parentNode.Name));
                     String name = parentNode.Name;
 
-                    Console.WriteLine("");
+                    //Console.WriteLine("");
 
                     Vector3 initpos = new Vector3(light.Position.X, light.Position.Y, light.Position.Z);
                     Vector3 initdir = new Vector3(0, 1, 0);
 
-                    Console.WriteLine(String.Format("InitPos: {0}, {1}, {2}", initpos.X, initpos.Y, initpos.Z));
-                    Console.WriteLine(String.Format("InitDir: {0}, {1}, {2}", initdir.X, initdir.Y, initdir.Z));
+                    //Console.WriteLine(String.Format("InitPos: {0}, {1}, {2}", initpos.X, initpos.Y, initpos.Z));
+                    //Console.WriteLine(String.Format("InitDir: {0}, {1}, {2}", initdir.X, initdir.Y, initdir.Z));
 
                     Matrix4 partrans = new Matrix4(new Vector4(ps.A1, ps.A2, ps.A3, ps.A4), new Vector4(ps.B1, ps.B2, ps.B3, ps.B4), new Vector4(ps.C1, ps.C2, ps.C3, ps.C4), new Vector4(ps.D1, ps.D2, ps.D3, ps.D4));
 
@@ -231,64 +226,73 @@ namespace UAS
                     Vector3 direction = position - calcdir.Xyz;
 
 
-                    Console.WriteLine(String.Format("CalcPos: {0}, {1}, {2}", position.X, position.Y, position.Z));
-                    Console.WriteLine(String.Format("CalcDir: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
-                    Console.WriteLine("");
+                    //Console.WriteLine(String.Format("CalcPos: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                    //Console.WriteLine(String.Format("CalcDir: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+                    //Console.WriteLine("");
 
                     Vector3 ambient = new Vector3(light.ColorAmbient.R, light.ColorAmbient.G, light.ColorAmbient.B);
                     Vector3 diffuse = new Vector3(light.ColorDiffuse.R, light.ColorDiffuse.G, light.ColorDiffuse.B);
                     Vector3 specular = new Vector3(light.ColorSpecular.R, light.ColorSpecular.G, light.ColorSpecular.B);
 
-                    
+                    int castshadow = 1;
+
+                    if (light.Name.IndexOf("NoShadow") != -1) { 
+                        castshadow = 0;
+                    }
+
                     if (light.LightType == LightSourceType.Directional)
                     {
-                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
-                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
-                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
-                        Console.WriteLine(String.Format("Type: Directional"));
-                        Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
-                        Light.GenerateDirectional(ref Scene.Lights, name, partrans, ambient, diffuse, specular, direction, initpos);
+                        //Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        //Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        //Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
+                        //Console.WriteLine(String.Format("Type: Directional"));
+                        //Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+                        Light.GenerateDirectional(ref Scene.Lights, name, partrans, ambient, diffuse, specular, direction, initpos, castshadow);
                     }
 
                     if (light.LightType == LightSourceType.Point)
                     {
-                    
 
-                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
-                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
-                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
-                        Console.WriteLine(String.Format("Type: Point"));
-                        Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
-                        Light.GeneratePoint(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, initpos);
+
+                        //Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        //Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        //Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
+                        //Console.WriteLine(String.Format("Type: Point"));
+                        //Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                        Light.GeneratePoint(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, initpos, castshadow);
                     }
 
                     if (light.LightType == LightSourceType.Spot)
                     {
-             
-                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
-                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
-                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
-                        Console.WriteLine(String.Format("Type: Spot"));
-                        Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
-                        Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
+
+                        //Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        //Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        //Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
+                        //Console.WriteLine(String.Format("Type: Spot"));
+                        //Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
+                        //Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
                         float innerCutOff = light.AngleInnerCone;
                         float outerCutOff = light.AngleOuterCone;
-                        Console.WriteLine(String.Format("Cutoff: {0}, {1}", innerCutOff, outerCutOff));
-                        Light.GenerateSpot(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, direction, initpos, outerCutOff * 1.5f, innerCutOff * 1.5f);
+                        //Console.WriteLine(String.Format("Cutoff: {0}, {1}", innerCutOff, outerCutOff));
+                        Light.GenerateSpot(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, direction, initpos, 1 - (innerCutOff / 2.0f), 1 - (outerCutOff / 2.0f), castshadow);
                     }
-                    Console.WriteLine();
+                    //Console.WriteLine();
                 }
             }
 
+            Object model = new Object(groupname);
 
+            // process mesh nodes
+            processNodes(newobj.RootNode, newobj, model, parDir);
+            
             parent.addChild(model);
         }
 
         private void processNodes(Assimp.Node node, Assimp.Scene scene, Object model, String parDir)
         {
-            Console.Write("\n##NODE - ");
-            Console.Write(node.Name);
-            Console.Write("\n");
+            //Console.Write("\n##NODE - ");
+            //Console.Write(node.Name);
+            //Console.Write("\n");
 
 
             foreach (var meshindex in node.MeshIndices)
@@ -297,7 +301,7 @@ namespace UAS
 
                 foreach (var bone in mesh.Bones)
                 {
-                    Console.WriteLine(mesh.Name+" -> Bone: " +bone.Name);
+                    //Console.WriteLine(mesh.Name+" -> Bone: " +bone.Name);
                 }
 
                 model.addChild(new Object(mesh.Name));
@@ -367,7 +371,7 @@ namespace UAS
                 {
                     newmat.ambient = new Vector3(1,1,1);
                     newmat.emissive = new Vector3(premat.ColorEmissive.R, premat.ColorEmissive.G, premat.ColorEmissive.B);
-                    Console.WriteLine(String.Format("Ems: {0},{1},{2}",newmat.emissive.X,newmat.emissive.Y,newmat.emissive.Z));
+                    //Console.WriteLine(String.Format("Ems: {0},{1},{2}",newmat.emissive.X,newmat.emissive.Y,newmat.emissive.Z));
                 }
 
                 if (premat.HasOpacity)
@@ -581,10 +585,10 @@ namespace UAS
 
                                 for (int x = 0; x < main.Width; x++)
                                 {
-                                    metal_pixels.Add(row[x].R);
-                                    metal_pixels.Add(row[x].R);
-                                    metal_pixels.Add(row[x].R);
-                                    metal_pixels.Add(row[x].R);
+                                    metal_pixels.Add(row[x].B);
+                                    metal_pixels.Add(row[x].B);
+                                    metal_pixels.Add(row[x].B);
+                                    metal_pixels.Add(row[x].B);
                                     rough_pixels.Add(row[x].G);
                                     rough_pixels.Add(row[x].G);
                                     rough_pixels.Add(row[x].G);
@@ -594,6 +598,7 @@ namespace UAS
 
                             newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), metal_pixels.ToArray(), main.Width, main.Height);
                             newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode()+1, rough_pixels.ToArray(), main.Width, main.Height);
+                            main.Dispose();
                         }
                     }
                     else
@@ -621,19 +626,20 @@ namespace UAS
 
                         newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), metal_pixels.ToArray(), main.Width, main.Height);
                         newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode() + 1, rough_pixels.ToArray(), main.Width, main.Height);
+                        main.Dispose();
                     }
                 };
 
-                Console.WriteLine("\n/Mesh Process START/");
+                //Console.WriteLine("\n/Mesh Process START/");
 
-                Console.WriteLine(mesh.Name);
-                Console.WriteLine(mesh.GetType().ToString());
-                Console.WriteLine(new_vertices.Count());
-                Console.WriteLine(new_normals.Count());
-                Console.WriteLine(new_tangents.Count());
-                Console.WriteLine(new_bitangents.Count());
-                Console.WriteLine(new_texcoords.Count());
-                Console.WriteLine((float)new_indices.Count() / 3.0f);
+                //Console.WriteLine(mesh.Name);
+                //Console.WriteLine(mesh.GetType().ToString());
+                //Console.WriteLine(new_vertices.Count());
+                //Console.WriteLine(new_normals.Count());
+                //Console.WriteLine(new_tangents.Count());
+                //Console.WriteLine(new_bitangents.Count());
+                //Console.WriteLine(new_texcoords.Count());
+                //Console.WriteLine((float)new_indices.Count() / 3.0f);
 
                 model.lastChild().createMesh(new_vertices, new_normals, new_tangents, new_bitangents, new_texcoords, new_indices);
                 model.lastChild().material = newmat;
@@ -641,11 +647,11 @@ namespace UAS
                 if (!mesh.HasTangentBasis && new_texcoords.Count > 0)
                 {
                     model.lastChild().generateTangentsBitangents();
-                    Console.WriteLine("Tangents Bitangents Corrected");
-                    Console.WriteLine(model.lastChild().tangents.Count());
-                    Console.WriteLine(model.lastChild().bitangents.Count());
+                    //Console.WriteLine("Tangents Bitangents Corrected");
+                    //Console.WriteLine(model.lastChild().tangents.Count());
+                    //Console.WriteLine(model.lastChild().bitangents.Count());
                 }
-                Console.WriteLine("\n/Mesh Proccess END/");
+                //Console.WriteLine("\n/Mesh Proccess END/");
             }
             foreach (var child in node.Children)
             {
@@ -661,9 +667,17 @@ namespace UAS
                 Animator.Timeline.Timelines[model.timelineHandle].Original = partrans;
             model.applyTransform(partrans);
 
-            Console.Write("\n##NODE END - ");
-            Console.Write(node.Name);
-            Console.Write("\n");
+            foreach (var light in Scene.Lights)
+            {
+                if (light.name == model.name) {
+                    light.parentObject = model;
+                    break;
+                }
+            }
+
+            //Console.Write("\n##NODE END - ");
+            //Console.Write(node.Name);
+            //Console.Write("\n");
         }
 
         public void applyTransform(Matrix4 transformation, bool parentAction = false)
@@ -1017,16 +1031,16 @@ namespace UAS
                     Scene.Shader_Color.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
                     Scene.Shader_Color.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
                     // light color
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].diffuse / 225);
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse / 225);
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular / 225);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].diffuse /20f);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse /20f);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular/20f);
                     // spot light cone cutoff
                     Scene.Shader_Color.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
                     Scene.Shader_Color.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
                     // attenuation
-                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
-                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
-                    Scene.Shader_Color.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
+                    //Scene.Shader_Color.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
+                    //Scene.Shader_Color.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
+                    //Scene.Shader_Color.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
                     Scene.Shader_Color.SetFloat(String.Format("lights[{0}].farPlane", i), Scene.Lights[i].farPlane);
                     // cast shadow 0 : not
                     Scene.Shader_Color.SetInt(String.Format("lights[{0}].castShadow", i), Scene.Lights[i].castShadow);
@@ -1061,16 +1075,16 @@ namespace UAS
                     Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
                     Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
                     // light color
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].ambient / 225);
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse / 225);
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular / 225);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].ambient/20f);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse/20f);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular/20f);
                     // spot light cone cutoff
                     Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
                     Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
                     // attenuation
-                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
-                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
-                    Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
+                    //Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].constant", i), Scene.Lights[i].constant);
+                    //Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].linear", i), Scene.Lights[i].linear);
+                    //Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].quadratic", i), Scene.Lights[i].quadratic);
                     Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].farPlane", i), Scene.Lights[i].farPlane);
                     // cast shadow 0 : not
                     Scene.Shader_NoMap.SetInt(String.Format("lights[{0}].castShadow", i), Scene.Lights[i].castShadow);
@@ -1128,14 +1142,17 @@ namespace UAS
                     if (texcoords.Count > 0) {
                         if (material.PBR)
                         {
+                            //Console.Write("PBR");
                             Scene.Shader_PBR.Use();
                         }
                         else
                         {
+                            //Console.Write("Color");
                             Scene.Shader_Color.Use();
                         }
                     }
-                    else { 
+                    else {
+                        //Console.Write("NoMap");
                         Scene.Shader_NoMap.Use();
                     }
                     GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
@@ -1937,7 +1954,7 @@ namespace UAS
             bitangents = new List<Vector3>(normals);
             if (texcoords.Count() != vertices.Count())
             {
-                Console.WriteLine("Generating TexCoords");
+                //Console.WriteLine("Generating TexCoords");
                 generateTexcoords();
             }
             for (int i = 2; i < vertexIndices.Count(); i += 3)
