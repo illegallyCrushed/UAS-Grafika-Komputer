@@ -7,7 +7,7 @@ Final Term Project for Computer Graphic Class
 <br><b>Jeremy H C14190215</b>
 
 <b>[File Laporan](https://docs.google.com/document/d/16ZQb5gdbfg45cO4JFZE1gbPbC1FqiTtpcbiqxBQAjzE/edit)</b>
-<br><b>[Video Demonstrasi](https://drive.google.com/file/d/109gOYxlgwaKbs0JxlPWhBYxMrnb53lUU/view?usp=sharing) -> Beberapa fitur baru tidak dijelaskan(outdated)</b>
+<br><b>[Video Demonstrasi](https://drive.google.com/file/d/109gOYxlgwaKbs0JxlPWhBYxMrnb53lUU/view?usp=sharing)</b>
 
 
 ## Preview :
