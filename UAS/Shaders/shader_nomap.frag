@@ -5,6 +5,7 @@ out vec4 FragColor;
 struct Material {
     vec3 ambient;
     vec3 diffuse;
+    vec3 emissive;
     vec3 specular;    
     float shininess;
     float alpha;
@@ -187,5 +188,5 @@ void main()
     }else{
         result = material.ambient * material.diffuse;
     }
-    FragColor = vec4(result, material.alpha);
+    FragColor = vec4(result, material.alpha) + vec4(material.emissive,1.0);
 }

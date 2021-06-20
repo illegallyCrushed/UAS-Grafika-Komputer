@@ -93,6 +93,19 @@ namespace UAS
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         }
 
+        public ImageStore(byte[] Data, int Width, int Height, int hash)
+        {
+            imgHandle = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, imgHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, Width, Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, Data);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToEdge);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToEdge);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.ClampToEdge);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        }
+
         public static int ImageLookup(ref List<ImageStore> ImageLib, String path)
         {
             foreach (var imagestore in ImageLib)
@@ -128,6 +141,27 @@ namespace UAS
             }
 
             ImageStore temp = new ImageStore(compressedData, hash);
+            ImageLib.Add(temp);
+            Console.WriteLine("ImageLookup - Added!");
+            Console.WriteLine(hash.ToString());
+            Console.WriteLine(temp.imgHandle);
+            return temp.imgHandle;
+        }
+
+        public static int ImageLookup(ref List<ImageStore> ImageLib, int hash, byte[] Data, int Width, int Height)
+        {
+            foreach (var imagestore in ImageLib)
+            {
+                if (imagestore.dirname == hash.ToString())
+                {
+                    Console.WriteLine("ImageLookup - Found!");
+                    Console.WriteLine(hash.ToString());
+                    Console.WriteLine(imagestore.imgHandle);
+                    return imagestore.imgHandle;
+                }
+            }
+
+            ImageStore temp = new ImageStore(Data, Width, Height, hash);
             ImageLib.Add(temp);
             Console.WriteLine("ImageLookup - Added!");
             Console.WriteLine(hash.ToString());

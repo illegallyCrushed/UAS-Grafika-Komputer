@@ -18,6 +18,7 @@ namespace UAS
         public Vector3 ambient;
         public Vector3 diffuse;
         public Vector3 specular;
+        public Vector3 emissive;
         public float specularExponent;
         public float alpha;
         public float dispHeight;
@@ -28,11 +29,15 @@ namespace UAS
         public int normHandle;
         public int paraHandle;
         public int ambiHandle;
+        public int emisHandle;
+        public int rougHandle;
 
         private List<byte> white_default;
         private List<byte> black_default;
 
         public string name;
+
+        public bool PBR;
 
         public Material(string matname = "Default")
         {
@@ -47,6 +52,8 @@ namespace UAS
             paraHandle = GL.GenTexture();
             // ambi map
             ambiHandle = GL.GenTexture();
+            // emis map
+            emisHandle = GL.GenTexture();
 
             name = matname;
             ambient.X = 1;
@@ -55,13 +62,18 @@ namespace UAS
             diffuse.X = 1;
             diffuse.Y = 1;
             diffuse.Z = 1;
-            specular.X = 1;
-            specular.Y = 1;
-            specular.Z = 1;
+            specular.X = 0;
+            specular.Y = 0;
+            specular.Z = 0;
+            emissive.X = 0;
+            emissive.Y = 0;
+            emissive.Z = 0;
             alpha = 1.0f;
             dispHeight = 0.1f;
             ambiance = 0.1f;
             specularExponent = 8;
+
+            PBR = false;
 
             white_default = new List<byte>(4 * 1 * 1);
             white_default.Add(255);
@@ -119,6 +131,24 @@ namespace UAS
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            GL.BindTexture(TextureTarget.Texture2D, emisHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            GL.BindTexture(TextureTarget.Texture2D, rougHandle);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         }
 
         public void loadDiffuse(String diffusePath = "")
@@ -156,6 +186,7 @@ namespace UAS
             }
             else
             {
+                PBR = false;
                 specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, specularPath);
             }
         }
@@ -217,6 +248,70 @@ namespace UAS
             else
             {
                 paraHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, paralaxPath);
+            }
+        }
+
+        public void loadEmission(String emissionPath = "")
+        {
+            if (emissionPath == "")
+            {
+                emisHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, emisHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            }
+            else
+            {
+                ambient = new Vector3(1, 1, 1);
+                emissive = new Vector3(0, 0, 0);
+                emisHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, emissionPath);
+            }
+        }
+
+        public void loadMetallic(String metallicPath = "")
+        {
+            if (metallicPath == "")
+            {
+                specHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, specHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, black_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            }
+            else
+            {
+                PBR = true;
+                specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, metallicPath);
+            }
+        }
+
+        public void loadRoughness(String roughnessPath = "")
+        {
+            if (roughnessPath == "")
+            {
+                rougHandle = GL.GenTexture();
+                GL.BindTexture(TextureTarget.Texture2D, rougHandle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 1, 1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, white_default.ToArray());
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (float)TextureWrapMode.Repeat);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            }
+            else
+            {
+                PBR = true;
+                rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, roughnessPath);
             }
         }
     }

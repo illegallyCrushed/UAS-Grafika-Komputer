@@ -6,6 +6,7 @@ struct Material {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;    
+    vec3 emissive;    
     float shininess;
     float alpha;
     float ambiance;
@@ -57,6 +58,7 @@ uniform sampler2D specMap;
 uniform sampler2D normMap;
 uniform sampler2D paraMap;
 uniform sampler2D ambiMap;
+uniform sampler2D emisMap;
 
 // others
 uniform vec3 viewPos;
@@ -114,7 +116,6 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 Tex
     vec3 ambient = light.ambient * material.ambient * texture(ambiMap, TexCoord).r * texture(diffMap, TexCoord).rgb;
     vec3 diffuse = light.diffuse * diff * material.diffuse * texture(diffMap, TexCoord).rgb;
     vec3 specular = light.specular * spec * material.specular * texture(specMap, TexCoord).r;
-    
     return (ambient + diffuse + specular);
 }
 
@@ -212,9 +213,8 @@ void main()
     normal = normalize(fs_in.TBN * normal);
 
     // start calculating lights
-    vec3 result;
+    vec3 result= vec3(0,0,0);
     if(globallighting == 1){
-        result = vec3(0,0,0);
         for(int i = 0; i < lightCount; i++){
             float shadow;
             if(globalshadow == 1 && lights[i].castShadow == 1){
@@ -233,5 +233,5 @@ void main()
     }else{
         result = material.ambient * texture(diffMap, TexCoord).rgb;
     }
-    FragColor = vec4(result, material.alpha);
+    FragColor = vec4(result, material.alpha) + texture(emisMap, TexCoord) + vec4(material.emissive,1.0); 
 }

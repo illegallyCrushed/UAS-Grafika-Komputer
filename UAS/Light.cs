@@ -22,6 +22,7 @@ namespace UAS
         // positional
         public Vector3 position;
         public Vector3 direction;
+        public Vector3 initial;
 
         // light color
         public Vector3 ambient;
@@ -47,6 +48,10 @@ namespace UAS
         public List<Matrix4> LightSpaceMatrix;
         public Matrix4 LightProjectionMatrix;
 
+        public Matrix4 LightDirectionalMatrix;
+
+        public int timelineHandle;
+
         public Light(String name)
         {
             this.name = name;
@@ -54,6 +59,7 @@ namespace UAS
 
             position = new Vector3(0, 0, 0);
             direction = new Vector3(0, -1, 0);
+            initial = new Vector3(0, 0, 0);
 
             ambient = new Vector3(1, 1, 1);
             diffuse = new Vector3(1, 1, 1);
@@ -71,11 +77,8 @@ namespace UAS
             castShadow = 1;
 
             lightCube = new Object(name);
-            lightCube.createCube();
-            lightCube.scale(1);
-            lightCube.setTranslate(0, 0, 0);
-            lightCube.init();
 
+            timelineHandle = -1;
 
             shadowMap = GL.GenTexture();
             GL.BindTexture(TextureTarget.TextureCubeMap, shadowMap);
@@ -109,7 +112,7 @@ namespace UAS
             return null;
         }
 
-        public static void GenerateDirectional(ref List<Light> lights, String name, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 dir, float posx = 0, float posy = 0, float posz = 0)
+        public static void GenerateDirectional(ref List<Light> lights, String name, Matrix4 mat, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 dir, Vector3 init, float posx = 0, float posy = 0, float posz = 0)
         {
             if (Light.FindLight(ref lights, name) != null)
             {
@@ -123,15 +126,22 @@ namespace UAS
             genlight.position = new Vector3(posx, posy, posz);
             genlight.lightType = Light.Directional;
             genlight.direction = dir;
+            genlight.initial = init;
             genlight.ambient = ambi;
             genlight.diffuse = diff;
             genlight.lightCube.material.diffuse = diff;
             genlight.specular = spec;
             genlight.castShadow = 0;
+            genlight.LightDirectionalMatrix = mat;
+            genlight.timelineHandle = Animator.Timeline.FindTimeline(name);
+            if (genlight.timelineHandle != -1)
+                Animator.Timeline.Timelines[genlight.timelineHandle].Original = mat;
+            genlight.lightCube.createCube();
+            genlight.lightCube.init();
             lights.Add(genlight);
         }
 
-        public static void GeneratePoint(ref List<Light> lights, String name, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 pos)
+        public static void GeneratePoint(ref List<Light> lights, String name, Matrix4 mat, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 pos, Vector3 init)
         {
             if (Light.FindLight(ref lights, name) != null)
             {
@@ -145,6 +155,7 @@ namespace UAS
 
             genlight.lightType = Light.Point;
             genlight.position = pos;
+            genlight.initial = init;
             genlight.ambient = ambi;
             genlight.diffuse = diff;
             genlight.lightCube.material.diffuse = diff;
@@ -152,10 +163,19 @@ namespace UAS
             //genlight.constant = constant;
             //genlight.linear = linear;
             //genlight.quadratic = quadratic;
+            genlight.LightDirectionalMatrix = mat;
+            genlight.timelineHandle = Animator.Timeline.FindTimeline(name);
+            if (genlight.timelineHandle != -1)
+                Animator.Timeline.Timelines[genlight.timelineHandle].Original = mat;
+            genlight.lightCube.createBall();
+            genlight.lightCube.setTranslate(0, 0, 0);
+            genlight.lightCube.init();
             lights.Add(genlight);
+
+            
         }
 
-        public static void GenerateSpot(ref List<Light> lights, String name, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 pos, Vector3 dir, float innerCutOff, float outerCutOff)
+        public static void GenerateSpot(ref List<Light> lights, String name, Matrix4 mat, Vector3 ambi, Vector3 diff, Vector3 spec, Vector3 pos, Vector3 dir, Vector3 init, float innerCutOff, float outerCutOff)
         {
             if (Light.FindLight(ref lights, name) != null)
             {
@@ -170,6 +190,7 @@ namespace UAS
             genlight.lightType = Light.Spot;
             genlight.position = pos;
             genlight.direction = dir;
+            genlight.initial = init;
             genlight.ambient = ambi;
             genlight.diffuse = diff;
             genlight.lightCube.material.diffuse = diff;
@@ -179,6 +200,12 @@ namespace UAS
             //genlight.quadratic = quadratic;
             genlight.innerCutOff = innerCutOff;
             genlight.outerCutOff = outerCutOff;
+            genlight.LightDirectionalMatrix = mat;
+            genlight.timelineHandle = Animator.Timeline.FindTimeline(name);
+            if (genlight.timelineHandle != -1)
+                Animator.Timeline.Timelines[genlight.timelineHandle].Original = mat;
+            genlight.lightCube.createCone();
+            genlight.lightCube.init();
             lights.Add(genlight);
         }
 
@@ -194,7 +221,7 @@ namespace UAS
             }
             else
             {
-                LightProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(90f.Rad(), (float)Scene.WindowSize.X / (float)Scene.WindowSize.Y, 1f, farPlane);
+                LightProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(90f.Rad(), (float)Scene.WindowSize.X / (float)Scene.WindowSize.Y, 0.001f, farPlane);
                 LightSpaceMatrix.Clear();
                 LightSpaceMatrix.Add(Matrix4.LookAt(position, position + new Vector3(1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
                 LightSpaceMatrix.Add(Matrix4.LookAt(position, position + new Vector3(-1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
@@ -212,9 +239,22 @@ namespace UAS
             GL.Viewport(0, 0, Scene.WindowSize.X, Scene.WindowSize.Y);
         }
 
+        public void refreshLightMatrix() {
+            if (timelineHandle != -1) {
+                LightDirectionalMatrix = Animator.Timeline.GetMatrixTransform(timelineHandle);
+
+                Vector4 calcpos = new Vector4(initial, 1.0f) * LightDirectionalMatrix;
+                Vector4 calcdir = new Vector4(0, 1, 0, 1.0f) * LightDirectionalMatrix;
+
+                position = calcpos.Xyz;
+                direction = position - calcdir.Xyz;
+            }
+        }
+
         public void renderLightCube()
         {
-            Matrix4 transform = Matrix4.CreateTranslation(position);
+            Matrix4 transform = Matrix4.CreateScale(5);
+            transform *= LightDirectionalMatrix;
             //Console.WriteLine("##");
             //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transform.M11, transform.M12, transform.M13, transform.M14));
             //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transform.M21, transform.M22, transform.M23, transform.M24));

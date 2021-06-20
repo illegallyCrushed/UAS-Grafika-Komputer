@@ -46,13 +46,21 @@ namespace UAS
             //scene.findChild("Backpack").scale(5);
             //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/oldshapes.glb", "light");
 
-            scene.LoadModel(ref scene, "../../../Assets/TestOBJ/lightTest.glb", "light");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/lightTest.glb", "light");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/ROADLIGHT.glb", "light");
+            //scene.LoadModel(ref scene, "../../../Assets/TestOBJ/testAnima.glb", "light");
 
-            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadDiffuse("../../../Assets/cobble/cbl_DIFF.jpg");
-            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadSpecular("../../../Assets/cobble/cbl_SPEC.jpg");
-            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadNormal("../../../Assets/cobble/cbl_NORM.jpg");
-            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadParalax("../../../Assets/cobble/cbl_DISP.jpg");
-            scene.findChild("light").findChild("Cube").findChild("Cube").material.loadAmbiOcc("../../../Assets/cobble/cbl_AO.jpg");
+            //Light.GenerateDirectional(ref Scene.Lights, "default", Matrix4.CreateScale(0), new Vector3(1), new Vector3(1), new Vector3(1), new Vector3(0, 1, 1));
+            //scene.LoadModel(ref scene, "../../../Assets/Monster/Monster.glb", "monster");
+            scene.LoadModel(ref scene, "../../../Assets/Monster/MonsterAnima.glb", "monster");
+
+
+
+            //scene.findChild("light").findChild("Cube").findChild("Cube").material.loadDiffuse("../../../Assets/cobble/cbl_DIFF.jpg");
+            //scene.findChild("light").findChild("Cube").findChild("Cube").material.loadSpecular("../../../Assets/cobble/cbl_SPEC.jpg");
+            //scene.findChild("light").findChild("Cube").findChild("Cube").material.loadNormal("../../../Assets/cobble/cbl_NORM.jpg");
+            //scene.findChild("light").findChild("Cube").findChild("Cube").material.loadParalax("../../../Assets/cobble/cbl_DISP.jpg");
+            //scene.findChild("light").findChild("Cube").findChild("Cube").material.loadAmbiOcc("../../../Assets/cobble/cbl_AO.jpg");
 
 
             //Light.GeneratePoint(ref Scene.Lights, "default", new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(0, 5, 0));
@@ -2122,59 +2130,59 @@ namespace UAS
 
         public static void Animations(ref Object scene)
         {
-            scene.findChild("BigTitleBezier").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
-            scene.findChild("BigTitleBezier.001").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
+            //scene.findChild("BigTitleBezier").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
+            //scene.findChild("BigTitleBezier.001").scale(TitleAnimator.MinMaxBounce(0.9995f, 1.0005f));
 
-            scene.findChild("Pohon").findChild("DaunPohon.001").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
-            scene.findChild("Pohon").findChild("DaunPohon.002").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
-            scene.findChild("Pohon").findChild("DaunPohon.001").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
-            scene.findChild("Pohon").findChild("DaunPohon.002").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
+            //scene.findChild("Pohon").findChild("DaunPohon.001").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
+            //scene.findChild("Pohon").findChild("DaunPohon.002").scaleZ(DaunPohonAnimator.MinMaxBounce(0.9985f, 1.0015f));
+            //scene.findChild("Pohon").findChild("DaunPohon.001").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
+            //scene.findChild("Pohon").findChild("DaunPohon.002").translateZ(DaunPohonAnimator.MinMaxBounce(-0.0015f, 0.0015f));
 
-            scene.findChild("Awan").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.001").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.002").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.003").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.004").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.005").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.006").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.007").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
-            scene.findChild("Awan.008").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.001").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.002").scaleX(AwanAnimator1.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.003").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.004").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.005").scaleX(AwanAnimator2.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.006").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.007").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
+            //scene.findChild("Awan.008").scaleX(AwanAnimator3.MinMaxBounce(0.998f, 1.002f));
 
 
-            if (CerobongAnimator.Linear() > 0 && CerobongAnimator.Linear() < 1)
-            {
-                scene.findChild("AsapCerobong").translateZ(0.005f);
-                scene.findChild("AsapCerobong").scale(1.004f);
-                scene.findChild("AsapCerobong").material.alpha += 0 - scene.findChild("AsapCerobong").material.alpha * 0.004f;
-            }
-            else
-            {
-                scene.findChild("AsapCerobong").restoreTransform();
-                scene.findChild("AsapCerobong").material.alpha = 1;
-            }
+            //if (CerobongAnimator.Linear() > 0 && CerobongAnimator.Linear() < 1)
+            //{
+            //    scene.findChild("AsapCerobong").translateZ(0.005f);
+            //    scene.findChild("AsapCerobong").scale(1.004f);
+            //    scene.findChild("AsapCerobong").material.alpha += 0 - scene.findChild("AsapCerobong").material.alpha * 0.004f;
+            //}
+            //else
+            //{
+            //    scene.findChild("AsapCerobong").restoreTransform();
+            //    scene.findChild("AsapCerobong").material.alpha = 1;
+            //}
 
-            if (CerobongAnimator1.Linear() > 0.1 && CerobongAnimator.Linear() < 1)
-            {
-                scene.findChild("AsapCerobong.001").translateZ(0.005f);
-                scene.findChild("AsapCerobong.001").scale(1.004f);
-                scene.findChild("AsapCerobong.001").material.alpha += 0 - scene.findChild("AsapCerobong.001").material.alpha * 0.004f;
-            }
-            else
-            {
-                scene.findChild("AsapCerobong.001").restoreTransform();
-                scene.findChild("AsapCerobong.001").material.alpha = 1;
-            }
-            if (CerobongAnimator2.Linear() > 0.2 && CerobongAnimator.Linear() < 1)
-            {
-                scene.findChild("AsapCerobong.002").translateZ(0.005f);
-                scene.findChild("AsapCerobong.002").scale(1.004f);
-                scene.findChild("AsapCerobong.002").material.alpha += 0 - scene.findChild("AsapCerobong.002").material.alpha * 0.004f;
-            }
-            else
-            {
-                scene.findChild("AsapCerobong.002").restoreTransform();
-                scene.findChild("AsapCerobong.002").material.alpha = 1;
-            }
+            //if (CerobongAnimator1.Linear() > 0.1 && CerobongAnimator.Linear() < 1)
+            //{
+            //    scene.findChild("AsapCerobong.001").translateZ(0.005f);
+            //    scene.findChild("AsapCerobong.001").scale(1.004f);
+            //    scene.findChild("AsapCerobong.001").material.alpha += 0 - scene.findChild("AsapCerobong.001").material.alpha * 0.004f;
+            //}
+            //else
+            //{
+            //    scene.findChild("AsapCerobong.001").restoreTransform();
+            //    scene.findChild("AsapCerobong.001").material.alpha = 1;
+            //}
+            //if (CerobongAnimator2.Linear() > 0.2 && CerobongAnimator.Linear() < 1)
+            //{
+            //    scene.findChild("AsapCerobong.002").translateZ(0.005f);
+            //    scene.findChild("AsapCerobong.002").scale(1.004f);
+            //    scene.findChild("AsapCerobong.002").material.alpha += 0 - scene.findChild("AsapCerobong.002").material.alpha * 0.004f;
+            //}
+            //else
+            //{
+            //    scene.findChild("AsapCerobong.002").restoreTransform();
+            //    scene.findChild("AsapCerobong.002").material.alpha = 1;
+            //}
 
         }
     }

@@ -31,6 +31,7 @@ namespace UAS
         public static bool ISFULLSCREEN = false;
         public static bool PLAYANIMATION = true;
 
+
         public Window(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
         {
             Console.WriteLine("\"Shaun the Sheep\" made by:");
@@ -93,8 +94,7 @@ namespace UAS
 
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
-            if(Window.PLAYANIMATION)
-                Animator.Tick(e);
+            Animator.Ticker.Update((float)e.Time*37);
             Scene.Movement(e, this);
         }
 

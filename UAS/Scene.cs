@@ -21,6 +21,7 @@ namespace UAS
 
         public static Shader Shader_NoMap;
         public static Shader Shader_Color;
+        public static Shader Shader_PBR;
         public static Shader Shader_Flat;
         public static Shader Shader_DepthCube;
         public static Shader Shader_DepthPlane;
@@ -33,7 +34,7 @@ namespace UAS
 
         public static Matrix4 ProjectionMatrix;
         public static Matrix4 ViewMatrix;
-        public static Vector3 ViewPosition = new Vector3(20, 0, 0);
+        public static Vector3 ViewPosition = new Vector3(20, 5, 0);
         public static Vector3 ViewTo = new Vector3(-1, 0, 0);
         public static Vector3 ViewUpwards = new Vector3(0, 1, 0);
         public static float Pitch = 0;
@@ -175,6 +176,8 @@ namespace UAS
             Shader_NoMap = new Shader("../../../Shaders/shader_nomap.vert", "../../../Shaders/shader_nomap.frag");
             Console.WriteLine("Init Color Shader");
             Shader_Color = new Shader("../../../Shaders/shader.vert", "../../../Shaders/shader.frag");
+            Console.WriteLine("Init PBR Shader");
+            Shader_PBR = new Shader("../../../Shaders/shader.vert", "../../../Shaders/shader_pbr.frag");
             Console.WriteLine("Init Flat Shader");
             Shader_Flat = new Shader("../../../Shaders/shader_flat.vert", "../../../Shaders/shader_flat.frag");
             Console.WriteLine("Init DepthCube Shader");
@@ -223,7 +226,11 @@ namespace UAS
 
             ViewMatrix = Matrix4.LookAt(ViewPosition, ViewPosition + ViewTo, ViewUpwards);
 
-
+            // refresh light animator
+            foreach (var light in Scene.Lights)
+            {
+                light.refreshLightMatrix();
+            }
 
             // get shadow, 1st pass
             if (GlobalShadow)
@@ -307,7 +314,6 @@ namespace UAS
             if (w.KeyboardState.IsKeyDown(Keys.Space))
             {
                 ViewPosition += ViewUpwards * speed * (float)e.Time;
-
             }
 
             if (w.KeyboardState.IsKeyDown(Keys.LeftShift))

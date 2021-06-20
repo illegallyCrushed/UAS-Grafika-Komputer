@@ -5,6 +5,9 @@ using System.Linq;
 using Assimp;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using PrimitiveType = OpenTK.Graphics.OpenGL4.PrimitiveType;
 using Quaternion = OpenTK.Mathematics.Quaternion;
 
@@ -49,6 +52,8 @@ namespace UAS
 
         // Object's name
         public string name;
+
+        public int timelineHandle = -1;
 
         // Constructor
         public Object(string name, bool parent = false)
@@ -167,12 +172,35 @@ namespace UAS
             newobj = importer.ImportFile(path, PostProcessSteps.Triangulate);
             String parDir = Path.GetDirectoryName(path);
             parDir += "\\";
+            float maxTime = 0;
+
+            foreach (var animation in newobj.Animations)
+            {
+                Console.WriteLine("Animation Name : " + animation.Name);
+                Console.WriteLine("Animation TPS : " + animation.TicksPerSecond);
+                Console.WriteLine("Animation Duration : " + animation.DurationInTicks);
+
+                if (animation.DurationInTicks / animation.TicksPerSecond > maxTime) {
+                    maxTime = (float)animation.DurationInTicks / (float)animation.TicksPerSecond;
+                    Console.WriteLine("Maxtime " + maxTime);
+                }
+            }
+
+            foreach (var animation in newobj.Animations)
+            {
+                foreach (var node in animation.NodeAnimationChannels)
+                {
+                    Console.WriteLine("\tNode Name : " + node.NodeName);
+                    Console.WriteLine("\tMax Time : " + maxTime * (float)animation.TicksPerSecond);
+                    Animator.Timeline.NewTimeline(node.NodeName, (float)animation.TicksPerSecond, maxTime*(float)animation.TicksPerSecond, node.ScalingKeys, node.RotationKeys, node.PositionKeys);
+                }
+            }
+
 
             Object model = new Object(groupname);
 
             // process mesh nodes
             processNodes(newobj.RootNode, newobj, model, parDir);
-
             if (newobj.HasLights)
             {
 
@@ -200,63 +228,53 @@ namespace UAS
                     Vector4 calcdir = new Vector4(initdir, 1.0f) * partrans;
 
                     Vector3 position = calcpos.Xyz;
-                    Vector3 direction = calcdir.Xyz - position;
+                    Vector3 direction = position - calcdir.Xyz;
 
-                    direction = new Vector3(-direction.X, -direction.Y, -direction.Z);
 
                     Console.WriteLine(String.Format("CalcPos: {0}, {1}, {2}", position.X, position.Y, position.Z));
                     Console.WriteLine(String.Format("CalcDir: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
                     Console.WriteLine("");
 
-                    Console.WriteLine("Original Transform");
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M11, partrans.M12, partrans.M13, partrans.M14));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M21, partrans.M22, partrans.M23, partrans.M24));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M31, partrans.M32, partrans.M33, partrans.M34));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", partrans.M41, partrans.M42, partrans.M43, partrans.M44));
-
-                    Matrix4 lookattrans = Matrix4.LookAt(position, position + direction, new Vector3(0, 0, 1));
-
-                    Console.WriteLine("Processed Transform");
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M11, lookattrans.M12, lookattrans.M13, lookattrans.M14));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M21, lookattrans.M22, lookattrans.M23, lookattrans.M24));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M31, lookattrans.M32, lookattrans.M33, lookattrans.M34));
-                    Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", lookattrans.M41, lookattrans.M42, lookattrans.M43, lookattrans.M44));
-
-
                     Vector3 ambient = new Vector3(light.ColorAmbient.R, light.ColorAmbient.G, light.ColorAmbient.B);
                     Vector3 diffuse = new Vector3(light.ColorDiffuse.R, light.ColorDiffuse.G, light.ColorDiffuse.B);
                     Vector3 specular = new Vector3(light.ColorSpecular.R, light.ColorSpecular.G, light.ColorSpecular.B);
 
-                    ambient = ambient  /225;
-                    diffuse = diffuse / 225;
-                    specular = specular / 225;
-
-                    Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
-                    Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
-                    Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
+                    
                     if (light.LightType == LightSourceType.Directional)
                     {
+                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
                         Console.WriteLine(String.Format("Type: Directional"));
                         Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
-                        Light.GenerateDirectional(ref Scene.Lights, name, ambient, diffuse, specular, direction);
+                        Light.GenerateDirectional(ref Scene.Lights, name, partrans, ambient, diffuse, specular, direction, initpos);
                     }
 
                     if (light.LightType == LightSourceType.Point)
                     {
+                    
+
+                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
                         Console.WriteLine(String.Format("Type: Point"));
                         Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
-                        Light.GeneratePoint(ref Scene.Lights, name, ambient, diffuse, specular, position);
+                        Light.GeneratePoint(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, initpos);
                     }
 
                     if (light.LightType == LightSourceType.Spot)
                     {
+             
+                        Console.WriteLine(String.Format("Ambient: {0}, {1}, {2}", ambient.X, ambient.Y, ambient.Z));
+                        Console.WriteLine(String.Format("Diffuse: {0}, {1}, {2}", diffuse.X, diffuse.Y, diffuse.Z));
+                        Console.WriteLine(String.Format("Specular: {0}, {1}, {2}", specular.X, specular.Y, specular.Z));
                         Console.WriteLine(String.Format("Type: Spot"));
                         Console.WriteLine(String.Format("Position: {0}, {1}, {2}", position.X, position.Y, position.Z));
                         Console.WriteLine(String.Format("Direction: {0}, {1}, {2}", direction.X, direction.Y, direction.Z));
                         float innerCutOff = light.AngleInnerCone;
                         float outerCutOff = light.AngleOuterCone;
                         Console.WriteLine(String.Format("Cutoff: {0}, {1}", innerCutOff, outerCutOff));
-                        Light.GenerateSpot(ref Scene.Lights, name, ambient, diffuse, specular, position, direction, outerCutOff * 2, innerCutOff * 2);
+                        Light.GenerateSpot(ref Scene.Lights, name, partrans, ambient, diffuse, specular, position, direction, initpos, outerCutOff * 1.5f, innerCutOff * 1.5f);
                     }
                     Console.WriteLine();
                 }
@@ -276,6 +294,12 @@ namespace UAS
             foreach (var meshindex in node.MeshIndices)
             {
                 Assimp.Mesh mesh = scene.Meshes[meshindex];
+
+                foreach (var bone in mesh.Bones)
+                {
+                    Console.WriteLine(mesh.Name+" -> Bone: " +bone.Name);
+                }
+
                 model.addChild(new Object(mesh.Name));
 
                 List<uint> new_indices = new List<uint>();
@@ -335,10 +359,22 @@ namespace UAS
                     newmat.specular = new Vector3(premat.ColorSpecular.R, premat.ColorSpecular.G, premat.ColorSpecular.B);
                 }
 
+                if (premat.HasShininess) {
+                    newmat.specularExponent = premat.Shininess;
+                }
+
+                if (premat.HasColorEmissive)
+                {
+                    newmat.ambient = new Vector3(1,1,1);
+                    newmat.emissive = new Vector3(premat.ColorEmissive.R, premat.ColorEmissive.G, premat.ColorEmissive.B);
+                    Console.WriteLine(String.Format("Ems: {0},{1},{2}",newmat.emissive.X,newmat.emissive.Y,newmat.emissive.Z));
+                }
+
                 if (premat.HasOpacity)
                 {
                     newmat.alpha = premat.Opacity;
                 }
+
 
                 if (premat.HasBumpScaling)
                 {
@@ -347,6 +383,7 @@ namespace UAS
 
                 if (premat.HasTextureAmbient)
                 {
+                    Console.Write("Texture Ambient!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureAmbient.FilePath);
                     if (embtext != null)
                     {
@@ -363,6 +400,7 @@ namespace UAS
 
                 if (premat.HasTextureAmbientOcclusion)
                 {
+                    Console.Write("Texture AO!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureAmbientOcclusion.FilePath);
                     if (embtext != null)
                     {
@@ -379,6 +417,7 @@ namespace UAS
 
                 if (premat.HasTextureDiffuse)
                 {
+                    Console.Write("Texture Diffuse!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureDiffuse.FilePath);
                     if (embtext != null)
                     {
@@ -395,22 +434,26 @@ namespace UAS
 
                 if (premat.HasTextureEmissive)
                 {
+                    newmat.ambient = new Vector3(1, 1, 1);
+                    newmat.emissive = new Vector3(0,0,0);
+                    Console.Write("Texture Emissive!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureEmissive.FilePath);
                     if (embtext != null)
                     {
                         if (embtext.IsCompressed)
                         {
-                            newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
+                            newmat.emisHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
                         }
                     }
                     else
                     {
-                        newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureEmissive.FilePath);
+                        newmat.emisHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + premat.TextureEmissive.FilePath);
                     }
                 }
 
                 if (premat.HasTextureDisplacement)
                 {
+                    Console.Write("Texture Displacement!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureDisplacement.FilePath);
                     if (embtext != null)
                     {
@@ -425,8 +468,10 @@ namespace UAS
                     }
                 }
 
+
                 if (premat.HasTextureNormal)
                 {
+                    Console.Write("Texture Normal!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureNormal.FilePath);
                     if (embtext != null)
                     {
@@ -443,7 +488,9 @@ namespace UAS
 
                 if (premat.HasTextureSpecular)
                 {
+                    Console.Write("Texture Specular!");
                     EmbeddedTexture embtext = scene.GetEmbeddedTexture(premat.TextureSpecular.FilePath);
+                    newmat.PBR = false;
                     if (embtext != null)
                     {
                         if (embtext.IsCompressed)
@@ -457,9 +504,128 @@ namespace UAS
                     }
                 }
 
-                model.lastChild().material = newmat;
+                TextureSlot metallicTexture = new TextureSlot();
+                if (premat.GetMaterialTexture(Assimp.TextureType.Metalness, 0, out metallicTexture))
+                {
+                    Console.Write("Texture Metallic!");
+                    newmat.PBR = true;
+                    EmbeddedTexture embtext = scene.GetEmbeddedTexture(metallicTexture.FilePath);
+                    if (embtext != null)
+                    {
+                        if (embtext.IsCompressed)
+                        {
+                            newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
+                        }
+                    }
+                    else
+                    {
+                        newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + metallicTexture.FilePath);
+                    }
+                };
+
+                TextureSlot roughnessTexture = new TextureSlot();
+                if (premat.GetMaterialTexture(Assimp.TextureType.Roughness, 0, out roughnessTexture))
+                {
+                    Console.Write("Texture Roughness!");
+                    newmat.PBR = true;
+                    EmbeddedTexture embtext = scene.GetEmbeddedTexture(roughnessTexture.FilePath);
+                    if (embtext != null)
+                    {
+                        if (embtext.IsCompressed)
+                        {
+                            newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
+                        }
+                    }
+                    else
+                    {
+                        newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + roughnessTexture.FilePath);
+                    }
+                };
+
+                TextureSlot albedoTexture = new TextureSlot();
+                if (premat.GetMaterialTexture(Assimp.TextureType.BaseColor, 0, out albedoTexture))
+                {
+                    Console.Write("Texture Albedo!");
+                    newmat.PBR = true;
+                    EmbeddedTexture embtext = scene.GetEmbeddedTexture(albedoTexture.FilePath);
+                    if (embtext != null)
+                    {
+                        if (embtext.IsCompressed)
+                        {
+                            newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), embtext.CompressedData);
+                        }
+                    }
+                    else
+                    {
+                        newmat.diffHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, parDir + albedoTexture.FilePath);
+                    }
+                };
+
+                TextureSlot metalRoughTexture = new TextureSlot();
+                if (premat.GetMaterialTexture(Assimp.TextureType.Unknown, 0, out metalRoughTexture))
+                {
+                    Console.Write("Texture Metallic-Roughness!");
+                    newmat.PBR = true;
+                    EmbeddedTexture embtext = scene.GetEmbeddedTexture(metalRoughTexture.FilePath);
+                    if (embtext != null)
+                    {
+                        if (embtext.IsCompressed)
+                        {
+                            Image<Rgba32> main = Image.Load<Rgba32>(embtext.CompressedData);
+                            main.Mutate(x => x.Flip(FlipMode.Vertical));
+                            List<byte> metal_pixels = new List<byte>(4 * main.Width * main.Height);
+                            List<byte> rough_pixels = new List<byte>(4 * main.Width * main.Height);
+                            for (int y = 0; y < main.Height; y++)
+                            {
+                                var row = main.GetPixelRowSpan(y);
+
+                                for (int x = 0; x < main.Width; x++)
+                                {
+                                    metal_pixels.Add(row[x].R);
+                                    metal_pixels.Add(row[x].R);
+                                    metal_pixels.Add(row[x].R);
+                                    metal_pixels.Add(row[x].R);
+                                    rough_pixels.Add(row[x].G);
+                                    rough_pixels.Add(row[x].G);
+                                    rough_pixels.Add(row[x].G);
+                                    rough_pixels.Add(row[x].G);
+                                }
+                            }
+
+                            newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), metal_pixels.ToArray(), main.Width, main.Height);
+                            newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode()+1, rough_pixels.ToArray(), main.Width, main.Height);
+                        }
+                    }
+                    else
+                    {
+                        Image<Rgba32> main = Image.Load<Rgba32>(metalRoughTexture.FilePath);
+                        main.Mutate(x => x.Flip(FlipMode.Vertical));
+                        List<byte> metal_pixels = new List<byte>(4 * main.Width * main.Height);
+                        List<byte> rough_pixels = new List<byte>(4 * main.Width * main.Height);
+                        for (int y = 0; y < main.Height; y++)
+                        {
+                            var row = main.GetPixelRowSpan(y);
+
+                            for (int x = 0; x < main.Width; x++)
+                            {
+                                metal_pixels.Add(row[x].R);
+                                metal_pixels.Add(row[x].R);
+                                metal_pixels.Add(row[x].R);
+                                metal_pixels.Add(row[x].R);
+                                rough_pixels.Add(row[x].G);
+                                rough_pixels.Add(row[x].G);
+                                rough_pixels.Add(row[x].G);
+                                rough_pixels.Add(row[x].G);
+                            }
+                        }
+
+                        newmat.specHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode(), metal_pixels.ToArray(), main.Width, main.Height);
+                        newmat.rougHandle = ImageStore.ImageLookup(ref Scene.TextureLibrary, embtext.GetHashCode() + 1, rough_pixels.ToArray(), main.Width, main.Height);
+                    }
+                };
 
                 Console.WriteLine("\n/Mesh Process START/");
+
                 Console.WriteLine(mesh.Name);
                 Console.WriteLine(mesh.GetType().ToString());
                 Console.WriteLine(new_vertices.Count());
@@ -470,6 +636,7 @@ namespace UAS
                 Console.WriteLine((float)new_indices.Count() / 3.0f);
 
                 model.lastChild().createMesh(new_vertices, new_normals, new_tangents, new_bitangents, new_texcoords, new_indices);
+                model.lastChild().material = newmat;
 
                 if (!mesh.HasTangentBasis && new_texcoords.Count > 0)
                 {
@@ -489,6 +656,9 @@ namespace UAS
             Matrix4x4 ps = node.Transform;
             Matrix4 partrans = new Matrix4(new Vector4(ps.A1, ps.A2, ps.A3, ps.A4), new Vector4(ps.B1, ps.B2, ps.B3, ps.B4), new Vector4(ps.C1, ps.C2, ps.C3, ps.C4), new Vector4(ps.D1, ps.D2, ps.D3, ps.D4));
             partrans.Transpose();
+            model.timelineHandle = Animator.Timeline.FindTimeline(node.Name);
+            if (model.timelineHandle != -1)
+                Animator.Timeline.Timelines[model.timelineHandle].Original = partrans;
             model.applyTransform(partrans);
 
             Console.Write("\n##NODE END - ");
@@ -730,9 +900,14 @@ namespace UAS
         {
 
             object_transform = saved_transform;
+            applyTransform(Matrix4.Identity);
         }
         public void renderDepth(Light light)
         {
+            if (timelineHandle != -1) {
+                restoreTransform();
+                applyTransform(Animator.Timeline.GetMatrixTransform(timelineHandle));
+            }
             if (vertices.Count > 0)
             {
                 GL.BindVertexArray(_vertexArrayObject);
@@ -765,6 +940,17 @@ namespace UAS
         }
         public void render(bool onlyshape = false)
         {
+            if (timelineHandle != -1)
+            {
+                restoreTransform();
+                applyTransform(Animator.Timeline.GetMatrixTransform(timelineHandle));
+
+                //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transer.Row0.Xywz));
+                //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transer.Row1.Xywz));
+                //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transer.Row2.Xywz));
+                //Console.WriteLine(String.Format("{0}, {1}, {2}, {3}", transer.Row3.Xywz));
+
+            }
             if (vertices.Count > 0)
             {
                 GL.ActiveTexture(TextureUnit.Texture1);
@@ -777,6 +963,11 @@ namespace UAS
                 GL.BindTexture(TextureTarget.Texture2D, material.paraHandle);
                 GL.ActiveTexture(TextureUnit.Texture5);
                 GL.BindTexture(TextureTarget.Texture2D, material.ambiHandle);
+                GL.ActiveTexture(TextureUnit.Texture6);
+                GL.BindTexture(TextureTarget.Texture2D, material.emisHandle);
+                GL.ActiveTexture(TextureUnit.Texture7);
+                GL.BindTexture(TextureTarget.Texture2D, material.rougHandle);
+
                 for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
                 {
                     GL.ActiveTexture(TextureUnit.Texture10 + i);
@@ -801,6 +992,7 @@ namespace UAS
                 Scene.Shader_Color.SetInt("normMap", 3);
                 Scene.Shader_Color.SetInt("paraMap", 4);
                 Scene.Shader_Color.SetInt("ambiMap", 5);
+                Scene.Shader_Color.SetInt("emisMap", 6);
                 // others
                 Scene.Shader_Color.SetVector3("viewPos", Scene.ViewPosition);
                 Scene.Shader_Color.SetInt("globallighting", Scene.GlobalLighting == true ? 1 : 0);
@@ -813,6 +1005,7 @@ namespace UAS
                 Scene.Shader_Color.SetFloat("material.shininess", (float)material.specularExponent);
                 Scene.Shader_Color.SetFloat("material.alpha", material.alpha);
                 Scene.Shader_Color.SetFloat("material.ambiance", material.ambiance);
+                Scene.Shader_Color.SetVector3("material.emissive", material.emissive);
                 Scene.Shader_Color.SetInt("lightCount", (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight));
                 for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
                 {
@@ -824,9 +1017,9 @@ namespace UAS
                     Scene.Shader_Color.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
                     Scene.Shader_Color.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
                     // light color
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].diffuse);
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse);
-                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].diffuse / 225);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse / 225);
+                    Scene.Shader_Color.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular / 225);
                     // spot light cone cutoff
                     Scene.Shader_Color.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
                     Scene.Shader_Color.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
@@ -856,6 +1049,7 @@ namespace UAS
                 Scene.Shader_NoMap.SetFloat("material.shininess", (float)material.specularExponent);
                 Scene.Shader_NoMap.SetFloat("material.alpha", material.alpha);
                 Scene.Shader_NoMap.SetFloat("material.ambiance", material.ambiance);
+                Scene.Shader_NoMap.SetVector3("material.emissive", material.emissive);
                 Scene.Shader_NoMap.SetInt("lightCount", (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight));
                 for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
                 {
@@ -867,9 +1061,9 @@ namespace UAS
                     Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
                     Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
                     // light color
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].ambient);
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse);
-                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].ambient", i), Scene.Lights[i].ambient / 225);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse / 225);
+                    Scene.Shader_NoMap.SetVector3(String.Format("lights[{0}].specular", i), Scene.Lights[i].specular / 225);
                     // spot light cone cutoff
                     Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
                     Scene.Shader_NoMap.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
@@ -884,14 +1078,66 @@ namespace UAS
                     Scene.Shader_NoMap.SetInt(String.Format("lights[{0}].shadowMap", i), 10 + i);
                 }
 
+                // color vertex
+                Scene.Shader_PBR.SetMatrix4("model", processed_transform);
+                Scene.Shader_PBR.SetMatrix4("view", Scene.ViewMatrix);
+                Scene.Shader_PBR.SetMatrix4("projection", Scene.ProjectionMatrix);
+                Scene.Shader_PBR.SetVector3("viewPosB", Scene.ViewPosition);
+                // maps
+                Scene.Shader_PBR.SetInt("albedoMap", 1);
+                Scene.Shader_PBR.SetInt("metallicMap", 2);
+                Scene.Shader_PBR.SetInt("normalMap", 3);
+                Scene.Shader_PBR.SetInt("paraMap", 4);
+                Scene.Shader_PBR.SetInt("aoMap", 5);
+                Scene.Shader_PBR.SetInt("emisMap", 6);
+                Scene.Shader_PBR.SetInt("roughnessMap", 7);
+                // others
+                Scene.Shader_PBR.SetVector3("viewPos", Scene.ViewPosition);
+                Scene.Shader_PBR.SetInt("globallighting", Scene.GlobalLighting == true ? 1 : 0);
+                Scene.Shader_PBR.SetInt("globalshadow", Scene.GlobalShadow == true ? 1 : 0);
+                Scene.Shader_PBR.SetFloat("height_scale", material.dispHeight);
+                Scene.Shader_PBR.SetFloat("alpha", material.alpha);
+                Scene.Shader_PBR.SetFloat("ambiance", material.ambiance);
+                // lights and materials
+                Scene.Shader_PBR.SetInt("lightCount", (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight));
+                for (int i = 0; i < (Scene.Lights.Count() < Scene.MaxLight ? Scene.Lights.Count() : Scene.MaxLight); i++)
+                {
+                    // 1 = directional;
+                    // 2 = point;
+                    // 3 = specular;
+                    Scene.Shader_PBR.SetInt(String.Format("lights[{0}].lightType", i), Scene.Lights[i].lightType);
+                    // positional
+                    Scene.Shader_PBR.SetVector3(String.Format("lights[{0}].position", i), Scene.Lights[i].position);
+                    Scene.Shader_PBR.SetVector3(String.Format("lights[{0}].direction", i), Scene.Lights[i].direction);
+                    // light color
+                    Scene.Shader_PBR.SetVector3(String.Format("lights[{0}].diffuse", i), Scene.Lights[i].diffuse);
+                    // spot light cone cutoff
+                    Scene.Shader_PBR.SetFloat(String.Format("lights[{0}].innerCutOff", i), Scene.Lights[i].innerCutOff);
+                    Scene.Shader_PBR.SetFloat(String.Format("lights[{0}].outerCutOff", i), Scene.Lights[i].outerCutOff);
+                    // light far plane
+                    Scene.Shader_PBR.SetFloat(String.Format("lights[{0}].farPlane", i), Scene.Lights[i].farPlane);
+                    // cast shadow 0 : not
+                    Scene.Shader_PBR.SetInt(String.Format("lights[{0}].castShadow", i), Scene.Lights[i].castShadow);
+                    Scene.Shader_PBR.SetInt(String.Format("lights[{0}].shadowMap", i), 10 + i);
+                }
+
                 GL.BindVertexArray(_vertexArrayObject);
 
                 if (Scene.Solids && !onlyshape)
                 {
-                    if (texcoords.Count > 0)
-                        Scene.Shader_Color.Use();
-                    else
+                    if (texcoords.Count > 0) {
+                        if (material.PBR)
+                        {
+                            Scene.Shader_PBR.Use();
+                        }
+                        else
+                        {
+                            Scene.Shader_Color.Use();
+                        }
+                    }
+                    else { 
                         Scene.Shader_NoMap.Use();
+                    }
                     GL.DrawElements(PrimitiveType.Triangles, vertexIndices.Count, DrawElementsType.UnsignedInt, 0);
                 }
                 if (Scene.Wireframe || onlyshape)
