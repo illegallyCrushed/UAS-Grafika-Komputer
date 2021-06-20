@@ -1,14 +1,16 @@
 # UAS-Grafika-Komputer
 Final Term Project for Computer Graphic Class
 
-## "Apocalypse" by :
+## "Monstapocalypse" by :
 <b>Leonando L C14190010</b>
 <br><b>Nicholas S C14190034</b>
 <br><b>Jeremy H C14190215</b>
 
-<b>[File Laporan](https://www.youtube.com/watch?v=dQw4w9WgXcQ)</b>
-<br><b>[Video Demonstrasi](https://www.youtube.com/watch?v=dQw4w9WgXcQ) -> Beberapa fitur baru tidak dijelaskan(outdated)</b>
+<b>[File Laporan](https://docs.google.com/document/d/16ZQb5gdbfg45cO4JFZE1gbPbC1FqiTtpcbiqxBQAjzE/edit)</b>
+<br><b>[Video Demonstrasi](https://drive.google.com/file/d/109gOYxlgwaKbs0JxlPWhBYxMrnb53lUU/view?usp=sharing) -> Beberapa fitur baru tidak dijelaskan(outdated)</b>
 
 
 ## Preview :
-<br><a href="https://scontent-cgk1-2.cdninstagram.com/v/t51.2885-19/s150x150/41681895_2194604767530728_4333324777042214912_n.jpg?tp=1&_nc_ht=scontent-cgk1-2.cdninstagram.com&_nc_cat=108&_nc_ohc=5dfnBMY2FFoAX9KUrFr&edm=ABfd0MgBAAAA&ccb=7-4&oh=833c20bcd3a9837e08c182e33c16a390&oe=60D44931&_nc_sid=7bff83"><img src="https://scontent-cgk1-2.cdninstagram.com/v/t51.2885-19/s150x150/41681895_2194604767530728_4333324777042214912_n.jpg?tp=1&_nc_ht=scontent-cgk1-2.cdninstagram.com&_nc_cat=108&_nc_ohc=5dfnBMY2FFoAX9KUrFr&edm=ABfd0MgBAAAA&ccb=7-4&oh=833c20bcd3a9837e08c182e33c16a390&oe=60D44931&_nc_sid=7bff83" alt="2021-04-19-05-27-00" border="0"></a>
+<br><a href="https://ibb.co/2nZKGpT"><img src="https://i.ibb.co/LkNpVs3/Screenshot-285.png" alt="Screenshot-285" border="0"></a>
+<br><a href="https://ibb.co/Xkt5nks"><img src="https://i.ibb.co/qFpgHFs/Screenshot-287.png" alt="Screenshot-287" border="0"></a>
+<br><a href="https://ibb.co/X3h2xB9"><img src="https://i.ibb.co/pRt0jDg/message-Image-1624227520067.jpg" alt="message-Image-1624227520067" border="0"></a>
