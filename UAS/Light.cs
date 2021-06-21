@@ -73,7 +73,7 @@ namespace UAS
             constant = 1.0f;
             linear = 0.0014f;
             quadratic = 0.000007f;
-            farPlane = 5000f;
+            farPlane = 8000f;
 
             castShadow = 1;
 
@@ -224,7 +224,7 @@ namespace UAS
             }
             else
             {
-                LightProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(90f.Rad(), (float)Scene.WindowSize.X / (float)Scene.WindowSize.Y, 0.001f, farPlane);
+                LightProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(90f.Rad(), (float)Scene.WindowSize.X / (float)Scene.WindowSize.Y, 0.1f, farPlane);
                 LightSpaceMatrix.Clear();
                 LightSpaceMatrix.Add(Matrix4.LookAt(position, position + new Vector3(1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);
                 LightSpaceMatrix.Add(Matrix4.LookAt(position, position + new Vector3(-1, 0, 0), new Vector3(0, -1, 0)) * LightProjectionMatrix);

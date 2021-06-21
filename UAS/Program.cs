@@ -11,7 +11,7 @@ namespace UAS
         {
             var ourWindow = new NativeWindowSettings()
             {
-                Size = new Vector2i(1000, 1000),
+                Size = new Vector2i(1280,720),
                 Title = "Proyek UAS - Monstapocalypse",
                 NumberOfSamples = Window.MULTISAMPLING_LEVEL
             };

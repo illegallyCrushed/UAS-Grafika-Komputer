@@ -39,6 +39,7 @@ namespace UAS
 
         public Matrix4 processed_transform;
         public Matrix4 object_transform;
+
         public Matrix4 origin_transform;
         public Matrix4 saved_transform;
 
@@ -153,16 +154,6 @@ namespace UAS
         public Object lastChild()
         {
             return children.Last();
-        }
-
-        private Material MaterialSearch(List<Material> matlib, String name)
-        {
-            foreach (var mat in matlib)
-            {
-                if (mat.name == name)
-                    return mat;
-            }
-            return new Material();
         }
 
         public void LoadModel(ref Object parent, String path, String groupname)

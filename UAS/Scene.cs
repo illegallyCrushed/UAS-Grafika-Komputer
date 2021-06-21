@@ -40,8 +40,8 @@ namespace UAS
         public static float Pitch = 0;
         public static float Yaw = 180;
         public static Vector3 WireframeColor = new Vector3(0, 0, 0);
-        //public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
-        public static Vector3 SkyColor = new Vector3(0.1f,0.1f,0.1f);
+        public static Vector3 SkyColor = new Vector3(0.529f, 0.808f, 0.922f);
+        //public static Vector3 SkyColor = new Vector3(0.1f,0.1f,0.1f);
         public static Vector2i WindowSize;
         public static float FOV = 45.0f;
         public static float RotateVelocityX = 0;
@@ -222,7 +222,7 @@ namespace UAS
         }
         public static void RenderScene()
         {
-            ProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(FOV.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 0.001f, 10000.0f);
+            ProjectionMatrix = Matrix4.CreatePerspectiveFieldOfView(FOV.Rad(), (float)WindowSize.X / (float)WindowSize.Y, 1f, 5000.0f);
 
             ViewMatrix = Matrix4.LookAt(ViewPosition, ViewPosition + ViewTo, ViewUpwards);
 
@@ -258,7 +258,9 @@ namespace UAS
             }
 
             // render skymap, 3st pass
-            RenderSkyBox();
+            if (Scene.GlobalLighting) { 
+                RenderSkyBox();
+            }
         }
 
         public static void MouseMovement(MouseMoveEventArgs e, Window w)
@@ -284,9 +286,9 @@ namespace UAS
                 Pitch -= deltaY * rotatesens;
             }
 
-            ViewTo.X = (float)Math.Cos(MathHelper.DegreesToRadians(Pitch)) * (float)Math.Cos(MathHelper.DegreesToRadians(Yaw));
-            ViewTo.Y = (float)Math.Sin(MathHelper.DegreesToRadians(Pitch));
-            ViewTo.Z = (float)Math.Cos(MathHelper.DegreesToRadians(Pitch)) * (float)Math.Sin(MathHelper.DegreesToRadians(Yaw));
+            ViewTo.X = (float)Math.Cos(Pitch.Rad()) * (float)Math.Cos(Yaw.Rad());
+            ViewTo.Y = (float)Math.Sin(Pitch.Rad());
+            ViewTo.Z = (float)Math.Cos(Pitch.Rad()) * (float)Math.Sin(Yaw.Rad());
             ViewTo.Normalize();
             w.MousePosition = new Vector2(w.Size.X / 2f, w.Size.Y / 2f);
         }
@@ -357,7 +359,13 @@ namespace UAS
                 Console.WriteLine("Toggle Fullscreen = " + Window.ISFULLSCREEN);
             }
 
-            if (w.KeyboardState.IsKeyReleased(Keys.F10))
+            if (w.KeyboardState.IsKeyReleased(Keys.F5))
+            {
+                Scene.GlobalLighting = !Scene.GlobalLighting;
+                Console.WriteLine("Toggle Lighting = " + Scene.GlobalLighting);
+            }
+
+            if (w.KeyboardState.IsKeyReleased(Keys.F6))
             {
                 Scene.GlobalShadow = !Scene.GlobalShadow;
                 Console.WriteLine("Toggle Shadow = " + Scene.GlobalShadow);
@@ -390,10 +398,11 @@ namespace UAS
                 Console.WriteLine("R - RESET CAMERA");
                 Console.WriteLine("");
                 Console.WriteLine("F1 - SHOW HELP");
+                Console.WriteLine("F5 - TOGGLE LIGHTING");
+                Console.WriteLine("F6 - TOGGLE SHADOW");
                 Console.WriteLine("F7 - TOGGLE WIREFRAMES");
                 Console.WriteLine("F8 - TOGGLE SOLIDS");
                 Console.WriteLine("F9 - TOGGLE LIGHTBALL");
-                Console.WriteLine("F10 - TOGGLE SHADOW");
                 Console.WriteLine("F11 - TOGGLE FULLSCREEN");
                 Console.WriteLine("F12 - TOGGLE ANIMATIONS");
                 Console.WriteLine("\nActions:");
